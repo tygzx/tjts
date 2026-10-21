@@ -1,0 +1,13 @@
+{
+  "name": "tjts-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "听到涛声逐句学习网页版（不含音频和插图）",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node umi-reader/scripts/serve.mjs",
+    "check": "node umi-reader/scripts/check-study-groups.mjs && node umi-reader/scripts/check-quiz.mjs && node umi-reader/scripts/check-text-web.mjs"
+  },
+  "devDependencies": { "jsdom": "26.1.0" }
+}

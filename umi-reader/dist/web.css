@@ -1,0 +1,15 @@
+.web-settings{padding:0 0 20px;margin-bottom:22px;border-bottom:1px solid #e3e9e8}
+.web-settings .settings-label{margin-top:0}
+.web-settings .settings-row{display:flex;flex-wrap:wrap;gap:9px}
+.web-settings .settings-row button{font-size:12px;padding:10px 12px}
+.web-address{padding:16px;margin:0 0 14px;border:1px solid #dce6e7;border-radius:12px;background:#f3f8f7}
+.web-address small{display:block;color:#6d8185;margin-bottom:9px}
+.web-address a{color:#153f53;display:block;font-size:18px;line-height:1.6;overflow-wrap:anywhere;text-underline-offset:4px}
+#web-addresses{margin-bottom:20px}
+@media(max-width:800px){.desktop-only{display:none!important}.web-address a{font-size:16px}.brand small{font-size:10px}}
+
+.text-only-note{font-size:12px;line-height:1.8;color:var(--muted);margin:12px 0 0}
+.text-only .word-row{grid-template-columns:27px minmax(110px,1.1fr) minmax(85px,.9fr) minmax(160px,2.6fr)}
+.text-only .kana-cell:hover{background:#f4f7f9;border-color:#e9eff3}
+@media(max-width:1150px){.text-only .word-row{grid-template-columns:20px minmax(90px,1fr) minmax(80px,.8fr) minmax(100px,1.6fr)}}
+@media(max-width:800px){.text-only .word-row{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr)}.text-only .word-definition{grid-column:2/4}.text-only .word-extra{grid-column:2/4}}
