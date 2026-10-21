@@ -26,7 +26,30 @@
 .\umi-reader\scripts\start-web.ps1 -NoBrowser
 ```
 
-macOS、Linux 或终端启动：在仓库根目录运行 `npm start`，再打开上述地址。按 Ctrl+C 停止。
+## Mac 打开方法
+
+1. 安装 [Node.js 的 macOS 版本](https://nodejs.org/)（20 或更高版本）。Intel 和 Apple 芯片的 Mac 都可以使用。
+2. 从本仓库下载 ZIP 并完整解压，保留 `umi-reader` 子目录。
+3. 双击 **启动听到涛声网页版.command**（Mac 使用 `.command`，Windows 使用 `.cmd`）。
+
+成功后会自动打开浏览器，地址仍是 `http://127.0.0.1:4173/`。服务在后台运行，可以关闭启动终端；用完双击 **停止听到涛声网页版.command**。不需要 `npm install` 或 AI 模型，也不需要管理员权限。
+
+如果解压后文件没有执行权限，在“终端”输入 `cd `（后面留一个空格），把解压后的文件夹拖进终端，按回车，再运行：
+
+```sh
+chmod +x *.command
+./启动听到涛声网页版.command
+```
+
+也可以在这个文件夹里直接运行 `npm start`，然后手动打开浏览器；这种方式需要保持终端运行，按 **Control+C** 停止。
+
+指定其他端口或只启动、不打开浏览器：
+
+```sh
+bash ./umi-reader/scripts/start-web.sh --port 4175 --no-browser
+```
+
+Mac 启动脚本不自动安装软件或修改系统设置。Linux 也可在仓库根目录运行 `npm start`。
 
 ## 手机浏览器
 
@@ -37,6 +60,8 @@ macOS、Linux 或终端启动：在仓库根目录运行 `npm start`，再打开
 ## 文件位置
 
 - `启动听到涛声网页版.cmd`、`停止听到涛声网页版.cmd`：Windows 入口。
+- `启动听到涛声网页版.command`、`停止听到涛声网页版.command`：Mac 入口。
+- `umi-reader/scripts/start-web.sh`、`stop-web.sh`：Mac 后台启动与停止脚本。
 - `umi-reader/scripts/start-web.ps1`、`stop-web.ps1`、`serve.mjs`：后台启动、停止与本地网页服务。
 - `umi-reader/dist/`：可直接运行的网页、正文学习数据及样式。
 - `umi-reader/dist/media-mode.js`：这个版本的无媒体模式。
