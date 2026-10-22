@@ -3,6 +3,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
+import {TOKEN_REPAIRS,repairBookTokens} from './repair-book-tokens.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const context={window:{}};
@@ -54,6 +55,48 @@ check('opening compound, aspect and explanatory expressions work together',()=>{
  const conclusion=expectChunk(2,'というわけだ','というわけだ');
  assert.equal(conclusion.p,'固定表达');
  assert.match(conclusion.definition,/结论|也就是说/);
+});
+check('reviewed token repairs preserve text and can run repeatedly',()=>{
+ for(const rule of TOKEN_REPAIRS){
+  const words=rule.from.map(w=>({...w,k:w.s,r:w.s,d:'unreviewed',auto:true}));
+  const fixtureBook={words,lines:[{t:words.map((_,i)=>i)}]};
+  assert.equal(repairBookTokens(fixtureBook).length,1,rule.id);
+  assert.deepEqual(fixtureBook.lines[0].t.map(id=>fixtureBook.words[id].s),rule.to.map(w=>w.s));
+  const once=JSON.stringify(fixtureBook);
+  assert.deepEqual(repairBookTokens(fixtureBook),[]);
+  assert.equal(JSON.stringify(fixtureBook),once,'A second build must not duplicate words or particles');
+ }
+ const unchanged=JSON.stringify(book);
+ assert.deepEqual(repairBookTokens(book),[],'Packaged book already contains the repairs');
+ assert.equal(JSON.stringify(book),unchanged);
+});
+check('unknown kana no longer swallow particles or surrounding words',()=>{
+ assert.deepEqual(surfaces(groupsAt(3)).slice(0,4),['市役所づとめ','の','母親','が']);
+ const workplace=expectChunk(3,'市役所づとめ','しやくしょづとめ');
+ assert.match(workplace.words[0].d,/工作|任职/);
+ assert.equal(workplace.words[0].auto,false);
+ const normal=groupsAt(3)[1];assert.equal(normal.p,'助词');
+ const fixtures=[
+  [475,['ふぅん','と','あやふや','に']],
+  [540,['おざなり','に']], [616,['とびいり','の']],
+  [989,['むなくそ','が']],
+  [1848,['壁ぎわ','に']], [1857,['壁ぎわ','の']], [1864,['壁ぎわ','の']],
+ ];
+ for(const [sentence,expected] of fixtures){
+  const values=surfaces(groupsAt(sentence)),start=values.indexOf(expected[0]);
+  assert(start>=0,`${sentence}: ${expected[0]}`);
+  assert.deepEqual(values.slice(start,start+expected.length),expected,`Sentence ${sentence}`);
+ }
+ expectChunk(1526,'いいぐさ','いいぐさ');
+ assert(surfaces(groupsAt(1526)).includes('いい'),'The other, genuine adjective いい stays intact');
+ for(const line of book.lines)assert(!line.t.some(id=>['づとめの','ぅんとあやふやに','ざなりに','びいりの','むなくそが','ぐさだということを','ぎわに','ぎわの'].includes(book.words[id].s)));
+});
+check('repairs never split ordinary の-ending words or valid 勤め forms',()=>{
+ const words=[word('そのもの'),word('もの'),word('勤めている','动词','勤める','基本形','つとめている')];
+ const fixtureBook={words,lines:[{t:[0,1,2]}]},before=JSON.stringify(fixtureBook);
+ assert.deepEqual(repairBookTokens(fixtureBook),[]);assert.equal(JSON.stringify(fixtureBook),before);
+ expectChunk(151,'そのもの','そのもの');
+ for(const sentence of [218,1624,2201,2623])assert(book.lines[sentence-1].t.some(id=>book.words[id].b==='勤める'||book.words[id].b==='勤め'));
 });
 check('passive and continuing past form stay together',()=>{
  const g=expectChunk(181,'いわれていた','いわれていた');

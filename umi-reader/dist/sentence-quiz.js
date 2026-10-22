@@ -24,7 +24,11 @@
   if(cache.has(book))return cache.get(book);
   const data={groups:book.lines.map(line=>groupsFor(book,line)),readings:new Map(),meanings:new Map(),bases:new Map(),surfaceReadings:new Map(),surfaceBases:new Map(),baseReadings:new Map(),lexemeMeanings:new Map(),surfaceMeanings:new Map(),translations:[],lineTranslations:new Map(),curatedTranslations:new WeakMap()};
   const readingRows=new Map(),meaningRows=new Map(),baseRows=new Map(),translations=new Map();
-  for(const w of book.words){
+  // Repaired spans keep old IDs stable; unused, incorrect dictionary entries
+  // must not return as distractors in a later quiz.
+  const activeWords=new Set(book.lines.flatMap(line=>line.t));
+  for(const id of activeWords){
+   const w=book.words[id];
    const b=text(w.b),d=text(w.d);
    if(b&&hasLetters(b)){add(data.surfaceBases,w.p+'\0'+w.s,b);add(baseRows,w.p,b);}
    if(w.s===b&&isReading(w.k))add(data.baseReadings,w.p+'\0'+b,kana(w.k));

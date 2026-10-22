@@ -22,6 +22,10 @@ const kana=value=>value.normalize('NFKC').replace(/[ァ-ヶ]/g,c=>String.fromCha
 const grouped=line=>study.create(book,line);
 const openingRounds=Array.from({length:12},(_,i)=>create(book,1,{limit:20,rng:seed(i+1)})).flat();
 const answerOf=q=>q.choices.find(c=>c.id===q.answerId).text;
+const workplaceRounds=Array.from({length:8},(_,i)=>create(book,2,{limit:20,rng:seed(i+10)})).flat();
+assert(workplaceRounds.some(q=>q.focus==='市役所づとめ'&&q.kind==='meaning'&&/工作、任职/.test(answerOf(q))));
+assert(workplaceRounds.some(q=>q.focus==='市役所づとめ'&&q.kind==='reading'&&answerOf(q)==='しやくしょづとめ'));
+assert(!workplaceRounds.some(q=>q.focus==='づとめの'));
 assert(openingRounds.some(q=>q.focus==='二度目'&&q.kind==='meaning'&&answerOf(q)==='第 2 次'),'Counters are tested as complete meanings');
 assert(openingRounds.some(q=>q.focus==='合格して'&&q.kind==='base'&&answerOf(q)==='合格する'),'Suru verbs use their whole base');
 assert(!openingRounds.some(q=>q.focus==='二度目'&&q.kind==='meaning'&&answerOf(q)==='二；两个'),'A grouped counter must not be reduced to its first digit');
@@ -37,6 +41,7 @@ for(let index=0;index<book.lines.length;index++){
   assert.equal(q.choices.length,4);assert.equal(new Set(q.choices.map(c=>c.id)).size,4);
   assert.equal(new Set(q.choices.map(c=>q.kind==='reading'?kana(c.text):plain(c.text))).size,4,'Choices cannot repeat equivalent text or kana');
   assert(q.choices.every(c=>c.text&&/^c-[a-f0-9]{8}$/.test(c.id)));
+  assert(q.choices.every(c=>!['づとめの','ぅんとあやふやに','ざなりに','びいりの','むなくそが','ぐさだということを','ぎわに','ぎわの'].includes(c.text)),'Retired incorrect tokens must never become quiz options');
   const correct=q.choices.filter(c=>c.id===q.answerId);assert.equal(correct.length,1);positions.add(q.choices.findIndex(c=>c.id===q.answerId));
   if(q.kind==='translation'){fallbackIndices.push(index);assert.equal(q.focus,jp);assert.equal(correct[0].text,book.lines[index].zh);assert.match(q.explanation,/机器参考/);}
   else{
