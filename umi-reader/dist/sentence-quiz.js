@@ -73,7 +73,7 @@
    answer=kana(g.k);const alternatives=data.surfaceReadings.get(g.s)||new Set([answer]);
    candidates=(data.readings.get(g.p)||[]).filter(value=>!alternatives.has(value)&&Math.abs(value.length-answer.length)<=Math.max(3,Math.ceil(answer.length*.6)));
    question.prompt='这个词组在本句中的读音是？';
-   question.explanation=`本句「${g.s}」的学习注音是「${answer}」。注音来自现有分词词典；专名、多音字与方言请结合上下文核对。`;
+   question.explanation=`本句「${g.s}」的学习注音是「${answer}」，与页面中的完整词组一致。专名、多音字与方言请结合原文注音和上下文理解。`;
   }else if(kind==='meaning'){
    answer=item.meaning;const alternatives=[answer,...(data.lexemeMeanings.get(p+'\0'+base)||[]),...(data.surfaceMeanings.get(p+'\0'+g.s)||[]),...(!item.meaningOverride?(data.surfaceMeanings.get(w.p+'\0'+w.s)||[]):[])];
    candidates=(data.meanings.get(p)||[]).filter(value=>!alternatives.some(other=>meaningOverlap(value,other)));
@@ -108,7 +108,7 @@
   data.groups[index].forEach((g,groupIndex)=>{
    const item=lexeme(g),{w,p,base}=item;if(g.p==='标点'||!hasLetters(g.s))return;
    if(isReading(g.k)&&kana(g.s)!==kana(g.k))descriptors.push({g,groupIndex,kind:'reading'});
-   if(item.reviewed&&item.meaning&&['名词','动词','形容词','副词','连体词','感叹词'].includes(p))descriptors.push({g,groupIndex,kind:'meaning'});
+   if(item.reviewed&&item.meaning&&['名词','动词','形容词','副词','连体词','感叹词','固定表达'].includes(p))descriptors.push({g,groupIndex,kind:'meaning'});
    if(['动词','形容词'].includes(p)&&base&&base!==g.s&&(!w.auto||item.baseOverride))descriptors.push({g,groupIndex,kind:'base'});
   });
   // Prefer different words before asking a second skill about the same word.

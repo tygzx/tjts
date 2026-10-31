@@ -29,6 +29,18 @@ const workplaceRounds=Array.from({length:8},(_,i)=>create(book,2,{limit:20,rng:s
 assert(workplaceRounds.some(q=>q.focus==='市役所づとめ'&&q.kind==='meaning'&&/工作、任职/.test(answerOf(q))));
 assert(workplaceRounds.some(q=>q.focus==='市役所づとめ'&&q.kind==='reading'&&answerOf(q)==='しやくしょづとめ'));
 assert(!workplaceRounds.some(q=>q.focus==='づとめの'));
+// Check answers as a learner sees them, including revised readings rather than
+// obsolete machine tokens still retained in the append-only dictionary.
+for(const [sentence,focus,kind,expected] of [
+ [14,'バスタオル','meaning',/浴巾/], [16,'窓ごし','reading',/^まどごし$/],
+ [17,'釣り舟','reading',/^つりぶね$/], [17,'淋しい','reading',/^さびしい$/],
+ [23,'金','reading',/^かね$/], [24,'感じいった','base',/^感じいる$/],
+ [25,'オンの字','meaning',/庆幸/], [26,'世話になりました','meaning',/照顾/]
+]){
+ const rounds=Array.from({length:24},(_,i)=>create(book,sentence-1,{limit:20,rng:seed(i+111)})).flat();
+ const questions=rounds.filter(q=>q.focus===focus&&q.kind===kind);assert(questions.length,`${sentence}: ${focus} ${kind}`);
+ for(const q of questions)assert.match(answerOf(q),expected,`${sentence}: ${focus}`);
+}
 assert(openingRounds.some(q=>q.focus==='二度目'&&q.kind==='meaning'&&answerOf(q)==='第 2 次'),'Counters are tested as complete meanings');
 assert(openingRounds.some(q=>q.focus==='合格して'&&q.kind==='base'&&answerOf(q)==='合格する'),'Suru verbs use their whole base');
 assert(!openingRounds.some(q=>q.focus==='二度目'&&q.kind==='meaning'&&answerOf(q)==='二；两个'),'A grouped counter must not be reduced to its first digit');

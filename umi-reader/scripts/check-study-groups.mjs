@@ -63,7 +63,7 @@ check('word meanings are reviewed independently of machine source flags',()=>{
  assert.equal(study.describe(eraku).reviewed,true);
  assert.match(study.describe(eraku).definition,/非常.*累得够呛/);
  assert.doesNotMatch(study.describe(eraku).definition,/太棒了/);
- for(const [n,s,meaning] of [[8,'築',/房龄/],[8,'こみで',/包含/],[9,'張り',/壁纸/],[9,'むこう',/再往里/],[9,'むき',/朝东/],[10,'月',/每月/],[21,'引きだしてくる',/取钱/],[27,'かえる',/回高知/],[29,'つこうたら',/花了.*钱/]]){
+ for(const [n,s,meaning] of [[8,'築',/房龄/],[8,'こみ',/包含/],[9,'クロス張り',/壁纸/],[9,'むこう',/再往里/],[9,'東むき',/朝东/],[10,'月',/每月/],[21,'引きだしてくる',/取钱/],[27,'かえる',/回高知/],[29,'つこうたら',/花了.*钱/]]){
   const g=expectChunk(n,s);assert.match(study.describe(g).definition,meaning);assert.equal(study.describe(g).reviewed,true);
  }
  assert.equal(study.describe(expectChunk(2,'二度目')).reviewed,true,'Reviewed counter overrides a machine-generated numeral');
@@ -84,10 +84,11 @@ check('contextual meanings do not leak into unrelated uses',()=>{
 });
 check('reviewed token repairs preserve text and can run repeatedly',()=>{
  for(const rule of TOKEN_REPAIRS){
-  const words=rule.from.map(w=>({...w,k:w.s,r:w.s,d:'unreviewed',auto:true}));
+  const prefix=rule.prefix?[word(rule.prefix,'标点')]:[],suffix=rule.suffix?[word(rule.suffix,'标点')]:[];
+  const words=[...prefix,...rule.from.map(w=>({k:w.s,r:w.s,d:'unreviewed',auto:true,...w})),...suffix];
   const fixtureBook={words,lines:[{t:words.map((_,i)=>i)}]};
   assert.equal(repairBookTokens(fixtureBook).length,1,rule.id);
-  assert.deepEqual(fixtureBook.lines[0].t.map(id=>fixtureBook.words[id].s),rule.to.map(w=>w.s));
+  assert.deepEqual(fixtureBook.lines[0].t.map(id=>fixtureBook.words[id].s),[...prefix,...rule.to,...suffix].map(w=>w.s));
   const once=JSON.stringify(fixtureBook);
   assert.deepEqual(repairBookTokens(fixtureBook),[]);
   assert.equal(JSON.stringify(fixtureBook),once,'A second build must not duplicate words or particles');
@@ -95,6 +96,47 @@ check('reviewed token repairs preserve text and can run repeatedly',()=>{
  const unchanged=JSON.stringify(book);
  assert.deepEqual(repairBookTokens(book),[],'Packaged book already contains the repairs');
  assert.equal(JSON.stringify(book),unchanged);
+});
+check('opening lexical units retain complete meanings and author readings',()=>{
+ const reviewed=[
+  [3,'母子','おやこ',/母亲/], [4,'のぼりおりした','のぼりおりした',/上下楼梯/],
+  [6,'いっぱつ','いっぱつ',/一次/], [8,'管理費','かんりひ',/管理费/],
+  [9,'内装し直した','ないそうしなおした',/重新装修/],
+  [9,'ウナギの寝床','うなぎのねどこ',/狭长/], [9,'イマふう','いまふう',/现代/],
+  [12,'ごろん','ごろん',/搁/], [13,'みた目','みため',/外观/],
+  [14,'バスタオル','ばすたおる',/浴巾/], [14,'喰って','くって',/吃/],
+  [15,'ハメ殺し','はめごろし',/不能开合/], [15,'テールランプ','てーるらんぷ',/尾灯/],
+  [16,'窓ごし','まどごし',/隔着窗户/], [16,'眺め','ながめ',/眺望/],
+  [17,'釣り舟','つりぶね',/钓鱼/], [17,'淋しい','さびしい',/寂寞/],
+  [17,'美しさ','うつくしさ',/美丽/], [17,'いつまでも','いつまでも',/一直/],
+  [19,'しまくった','しまくった',/不停地买/], [21,'駅まえ','えきまえ',/车站前/],
+  [21,'５万','ごまん',/五万/], [21,'10万','じゅうまん',/十万/],
+  [22,'なんにせよ','なんにせよ',/不管怎样/], [23,'金','かね',/钱/],
+  [23,'生きちゅうがやなぁ','いきちゅうがやなあ',/靠父母的钱/],
+  [24,'感じいった','かんじいった',/深有感触/], [25,'金','かね',/钱/],
+  [25,'数年','すうねん',/几年/], [25,'オンの字','おんのじ',/庆幸/],
+  [26,'世話になりました','せわになりました',/照顾/],
+  [28,'デスマス体','ですますたい',/礼貌体/], [29,'使い疲れする','つかいつかれする',/花钱/],
+ ];
+ for(const [n,s,k,d] of reviewed){const g=expectChunk(n,s,k);assert.match(study.describe(g).definition,d,`${n}: ${s}`);assert.equal(study.describe(g).reviewed,true,s);}
+ assert.equal(groupsAt(17).filter(g=>g.s==='いつまでも').length,2,'Both repeated expressions retain their reading');
+ for(const [n,s,p,d] of [[3,'ついてきた','动词',/陪同/],[11,'と','助词',/引用/],[13,'な','助动词',/豪华/],[19,'な','助动词',/势头/],[20,'だ','助动词',/列举/],[20,'かけた','动词',/吸尘器/]]){
+  const g=expectChunk(n,s);assert.equal(g.p,p);assert.match(study.describe(g).definition,d);
+ }
+});
+check('reading and particle repairs require their actual context',()=>{
+ // Literal gold and genuine にごる must survive; an unreviewed homograph is
+ // not enough evidence to replace a dictionary entry throughout the book.
+ for(const words of [
+  [word('金','名词','金','','きん')],
+  [word('水','名词'),word('が','助词'),word('にごろ','动词','にごる'),word('ん','助动词')],
+  [word('北','名词'),word('を','助词'),word('むこ','动词','むく'),word('う','助动词')]
+ ]){const b={words,lines:[{t:words.map((_,i)=>i)}]},before=JSON.stringify(b);assert.deepEqual(repairBookTokens(b),[]);assert.equal(JSON.stringify(b),before);}
+ const a=groupsAt(21).map(g=>g.s);assert(!a.includes('５万10万'),'Two withdrawn amounts are not one giant number');
+ for(const n of [16,347,540,1090,1989,2454]){
+  const g=groupsAt(n).find(g=>g.s.startsWith('眺め'));assert(g);assert(g.k.startsWith('ながめ'));assert.equal(g.words[0].b,'眺める');
+ }
+ for(const n of [14,1403])expectChunk(n,'バスタオル','ばすたおる');
 });
 check('unknown kana no longer swallow particles or surrounding words',()=>{
  assert.deepEqual(surfaces(groupsAt(3)).slice(0,4),['市役所づとめ','の','母親','が']);
