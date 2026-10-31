@@ -84,7 +84,7 @@
    const chunk=groups.slice(i,match.end),rule=match.rule;
    const k=chunk.map(g=>g.k).join('');
    const word={s:match.s,k,b:rule.base,p:'固定表达',d:rule.definition,f:'基本形',auto:false};
-   out.push({s:word.s,k,p:word.p,words:[word],parts:chunk.flatMap(g=>g.parts||g.words),audioParts:chunk.flatMap(g=>g.audioParts||[{s:g.s,k:g.k,p:g.p}]),definition:word.d,base:word.b,note:rule.note,rule:rule.id});
+   out.push({s:word.s,k,p:word.p,words:[word],parts:chunk.flatMap(g=>g.parts||g.words),audioParts:chunk.flatMap(g=>g.audioParts||[{s:g.s,k:g.k,p:g.p}]),definition:word.d,definitionReviewed:true,base:word.b,note:rule.note,rule:rule.id});
    if(rule.id==='rephrase'&&window.LESSON_NOTES?.some(n=>n[0]==='というか'&&n[1]===k+'。'))out.at(-1).audioTitle='というか';
    i=match.end;
   }

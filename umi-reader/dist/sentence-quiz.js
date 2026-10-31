@@ -18,7 +18,7 @@
  function lexeme(g){
   const w=g.words[0],baseOverride=!!text(g.base),meaningOverride=!!text(g.definition);
   return {w,p:g.p||w.p,base:text(g.base)||text(w.b),meaning:text(g.definition)||text(w.d),baseOverride,meaningOverride,
-   reviewed:!w.auto||(['counter','number'].includes(g.rule)&&meaningOverride)};
+   reviewed:window.STUDY_GROUPS.describe(g).reviewed};
  }
  function prepare(book){
   if(cache.has(book))return cache.get(book);
@@ -77,13 +77,13 @@
   }else if(kind==='meaning'){
    answer=item.meaning;const alternatives=[answer,...(data.lexemeMeanings.get(p+'\0'+base)||[]),...(data.surfaceMeanings.get(p+'\0'+g.s)||[]),...(!item.meaningOverride?(data.surfaceMeanings.get(w.p+'\0'+w.s)||[]):[])];
    candidates=(data.meanings.get(p)||[]).filter(value=>!alternatives.some(other=>meaningOverlap(value,other)));
-   question.prompt=item.meaningOverride?'这个词组的基本词义是？':g.words.length>1?`其中核心词「${base}」的词典释义是？`:'这个词语的词典释义是？';
-   question.explanation=item.meaningOverride?`「${g.s}」的学习释义：${answer}。${text(g.note)}`:`「${base||w.s}」的现有词典释义：${answer}。${g.words.length>1?'这题只考核心词义，完整表达还需结合后面的语法。'+text(g.note):'本句的具体含义还需结合上下文。'}`;
+   question.prompt=g.definitionScope==='context'?'这个词语在本句中的意思是？':item.meaningOverride?'这个词组的基本词义是？':g.words.length>1?`其中核心词「${base}」的词典释义是？`:'这个词语的词典释义是？';
+   question.explanation=item.meaningOverride?`「${g.s}」的学习释义：${answer}。${text(g.glossNote||g.note)}`:`「${base||w.s}」的现有词典释义：${answer}。${g.words.length>1?'这题只考核心词义，完整表达还需结合后面的语法。'+text(g.note):'本句的具体含义还需结合上下文。'}`;
   }else{
    answer=base;const alternatives=new Set([base,...(data.surfaceBases.get(p+'\0'+g.s)||[]),...(!item.baseOverride?(data.surfaceBases.get(w.p+'\0'+w.s)||[]):[])]),readings=data.baseReadings.get(p+'\0'+base)||new Set();
    candidates=(data.bases.get(p)||[]).filter(value=>!alternatives.has(value)&&![...(data.baseReadings.get(p+'\0'+value)||[])].some(k=>readings.has(k)));
    question.prompt='这个词组中核心词的原形是？';
-   question.explanation=item.baseOverride?`「${g.s}」中核心词的原形是「${base}」。${text(g.note)}`:`「${g.s}」中核心词的原形是「${base}」。${text(g.note)||'基本形来自分词词典自动分析；方言和省略表达请结合上下文核对。'}`;
+   question.explanation=item.baseOverride?`「${g.s}」中核心词的原形是「${base}」。${text(g.glossNote||g.note)}`:`「${g.s}」中核心词的原形是「${base}」。${text(g.note)||'基本形来自分词词典自动分析；方言和省略表达请结合上下文核对。'}`;
   }
   const result=options(kind,answer,candidates,rng);return result?{...question,...result}:null;
  }

@@ -121,7 +121,7 @@
   return {words,parts:words.slice(),s:items.map(g=>g.s).join(''),k:items.map(g=>g.k).join(''),p:items[0].p,
    audioParts:items.flatMap(g=>g.audioParts),rule,
    note:[...new Set(items.map(g=>g.note).filter(Boolean).concat(note||[]))].join(' '),
-   ...(items[0].base?{base:items[0].base}:{}),...(items[0].definition?{definition:items[0].definition}:{}),...extra};
+   ...(items[0].base?{base:items[0].base}:{}),...(items[0].definition?{definition:items[0].definition,definitionReviewed:items[0].definitionReviewed===true}:{}),...extra};
  }
  function create(book,line){
   let groups=legacy(book,line);
@@ -139,8 +139,8 @@
     if(groups[finish]?.s==='目'&&groups[finish].k==='め'){finish++;isOrdinal=true;}
     const s=groups.slice(i,finish).map(g=>g.s).join('');
     const definition=isOrdinal?`第 ${n} ${COUNTERS[c][1].replace('（序数）','')}`:`${n} ${COUNTERS[c][1]}`;
-    groups.splice(i,finish-i,merge(groups.slice(i,finish),'counter',`数字和量词作为一个单位学习。${c==='日'&&n===1?'这里若表示一天，读「いちにち」；每月一号读「ついたち」，依上下文区分。':''}`,{k:k+(finish>end+1?'め':''),base:s,definition,p:'名词'}));
-   }else if(end>i+1){groups.splice(i,end-i,merge(groups.slice(i,end),'number','把组成数值的数字连起来读。',{k:numberKana(n),base:raw,definition:String(n),p:'名词'}));}
+    groups.splice(i,finish-i,merge(groups.slice(i,finish),'counter',`数字和量词作为一个单位学习。${c==='日'&&n===1?'这里若表示一天，读「いちにち」；每月一号读「ついたち」，依上下文区分。':''}`,{k:k+(finish>end+1?'め':''),base:s,definition,definitionReviewed:true,p:'名词'}));
+   }else if(end>i+1){groups.splice(i,end-i,merge(groups.slice(i,end),'number','把组成数值的数字连起来读。',{k:numberKana(n),base:raw,definition:String(n),definitionReviewed:true,p:'名词'}));}
   }
   // Fold only across a known grammatical boundary. Punctuation, lexical nouns,
   // topic/case particles and a verb's finite form cannot enter these rules.
@@ -148,7 +148,7 @@
   for(const g of groups){
    const a=out.at(-1),first=g.words[0],last=a?.words.at(-1);let rule='',note='',extra={};
    if(a&&a.p==='名词'&&SAHEN.has(a.s)&&first.p==='动词'&&first.b==='する'){
-    rule='suru-verb';note=`「${a.s}＋する」构成动词，后面的词尾一起表示时态或语气。`;extra={p:'动词',base:a.s+'する',definition:a.definition||a.words[0].d};
+    rule='suru-verb';note=`「${a.s}＋する」构成动词，后面的词尾一起表示时态或语气。`;extra={p:'动词',base:a.s+'する',definition:a.definition||a.words[0].d,definitionReviewed:a.definition?a.definitionReviewed===true:!a.words[0].auto};
    }else if(a&&a.p==='动词'&&first.p==='动词'&&Object.hasOwn(SUFFIX,first.b)&&/^未然/.test(last.f)){
     rule='verb-suffix';note=SUFFIX[first.b];
    }else if(a&&a.p==='动词'&&last.p==='助词'&&['て','で'].includes(last.s)&&first.p==='动词'&&Object.hasOwn(SUPPLEMENT,first.b)){
@@ -159,7 +159,7 @@
    }else if(a&&a.p==='动词'&&last.f==='連用形'&&!['いる','おる','ある'].includes(last.b)&&first.p==='动词'&&Object.hasOwn(COMPOUND,first.b)){
     rule='compound-verb';note=`「${first.b}」接在动词连用形后，表示${COMPOUND[first.b]}。`;
     const meaning=COMPOUND_MEANINGS[last.b+'/'+first.b];
-    if(meaning){extra={base:meaning[0],definition:meaning[1]};note=`「${meaning[0]}」作为复合动词表示“${meaning[1]}”，这里把它的词尾一同学习。`;}
+    if(meaning){extra={base:meaning[0],definition:meaning[1],definitionReviewed:true};note=`「${meaning[0]}」作为复合动词表示“${meaning[1]}”，这里把它的词尾一同学习。`;}
    }
    if(rule)out[out.length-1]=merge([a,g],rule,note,extra);else out.push(g);
   }

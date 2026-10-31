@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {TOKEN_REPAIRS,repairBookTokens} from './repair-book-tokens.mjs';
+import {reviewBookGlosses} from './review-book-glosses.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const context={window:{}};
@@ -55,6 +56,31 @@ check('opening compound, aspect and explanatory expressions work together',()=>{
  const conclusion=expectChunk(2,'というわけだ','というわけだ');
  assert.equal(conclusion.p,'固定表达');
  assert.match(conclusion.definition,/结论|也就是说/);
+});
+check('word meanings are reviewed independently of machine source flags',()=>{
+ const eraku=expectChunk(4,'えらく','えらく');
+ assert.equal(study.describe(eraku).contextual,true);
+ assert.equal(study.describe(eraku).reviewed,true);
+ assert.match(study.describe(eraku).definition,/非常.*累得够呛/);
+ assert.doesNotMatch(study.describe(eraku).definition,/太棒了/);
+ for(const [n,s,meaning] of [[8,'築',/房龄/],[8,'こみで',/包含/],[9,'張り',/壁纸/],[9,'むこう',/再往里/],[9,'むき',/朝东/],[10,'月',/每月/],[21,'引きだしてくる',/取钱/],[27,'かえる',/回高知/],[29,'つこうたら',/花了.*钱/]]){
+  const g=expectChunk(n,s);assert.match(study.describe(g).definition,meaning);assert.equal(study.describe(g).reviewed,true);
+ }
+ assert.equal(study.describe(expectChunk(2,'二度目')).reviewed,true,'Reviewed counter overrides a machine-generated numeral');
+ assert.equal(study.describe({words:[{d:'old',auto:true}],definition:'new',definitionReviewed:true}).reviewed,true);
+ assert.equal(study.describe({words:[{d:'known',auto:false}],definition:'unreviewed override'}).reviewed,false,'A known stem does not automatically verify a new gloss');
+ assert.equal(study.describe({words:[{d:'machine',auto:true}]}).reviewed,false);
+});
+check('contextual meanings do not leak into unrelated uses',()=>{
+ for(const [n,expected] of [[138,/悠闲/],[1664,/发了很大的火/]])assert.match(study.describe(expectChunk(n,'えらく')).definition,expected);
+ const sameToken=book.words.find(w=>w.s==='月'&&w.d==='月亮');
+ assert(sameToken,'Monthly rent must not rewrite all dictionary senses of 月');
+ const separate={words:[sameToken],lines:[]};
+ assert.equal(study.describe(study.create(separate,{t:[0]})[0]).definition,'月亮');
+ for(const n of [488,489,503])assert(!groupsAt(n).some(g=>(g.definition||'').includes('向母亲致谢')));
+ assert.equal(reviewBookGlosses(book),0,'Reviewed glossary is packaged and repeatable');
+ const frog={words:[{s:'かえる',b:'かえる',p:'名词',d:'青蛙',auto:true}]};
+ reviewBookGlosses(frog);assert.equal(frog.words[0].d,'青蛙','Noun and verb homographs are not interchangeable');
 });
 check('reviewed token repairs preserve text and can run repeatedly',()=>{
  for(const rule of TOKEN_REPAIRS){

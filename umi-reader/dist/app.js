@@ -66,15 +66,15 @@
  window.onNativePause=()=>stop();
  const renderMessage=()=>{const el=$('#voice-message');if(el){el.textContent=voiceMessage;el.hidden=!voiceMessage;}};
  function wordInfo(g){
-  const w=g.words[0],extra=g.rule?[]:g.words.slice(1),base=g.base||w.b,definition=g.definition||w.d;
-  const morph=g.note||(w.f&&w.f!=='基本形'?FORM_NOTES[w.f]||`此处采用「${w.f}」形式，和后面的词尾一起理解。`:'');
+  const w=g.words[0],info=window.STUDY_GROUPS.describe(g),extra=g.rule||info.contextual?[]:g.words.slice(1),{base,definition,reviewed,contextual}=info;
+  const morph=g.glossNote||g.note||(w.f&&w.f!=='基本形'?FORM_NOTES[w.f]||`此处采用「${w.f}」形式，和后面的词尾一起理解。`:'');
   const parts=g.rule?(g.parts||g.words).map(x=>x.s).join(' ＋ '):'';
-  return {w,extra,base,definition,morph,parts};
+  return {w,extra,base,definition,morph,parts,reviewed,contextual};
  }
  function wordsHTML(){
   const meaningful=groups.filter(g=>g.p!=='标点');
   return `<p class="hint">按原句顺序拆解 · 点击下方日文可放大字形${textOnly?'':'，点扬声器听读音'}</p><div class="word-list">${meaningful.map((g,j)=>{
-   const {w,extra,base,definition,morph,parts}=wordInfo(g),known=w.auto?' <span class="auto">机器参考</span>':'';
+   const {w,extra,base,definition,morph,parts,reviewed,contextual}=wordInfo(g),known=contextual?' <span class="pos">本句释义</span>':!reviewed?' <span class="auto" title="自动生成，尚未按本句核对">词义待核对</span>':'';
    return `<div class="word-row ${selected===g.i?'selected':''}" id="word-${g.i}" data-word="${g.i}"><span class="word-number">${String(j+1).padStart(2,'0')}</span><button type="button" class="word-title word-zoom-trigger" lang="ja" data-zoom-word="${g.i}" aria-label="放大词语：${esc(g.s)}" aria-haspopup="dialog" title="点击放大字形">${esc(g.s)}${base!==g.s?`<small>原形 ${esc(base)}</small>`:''}</button><div class="word-reading" lang="ja">${esc(g.k)}<small lang="en">${esc(g.r)}</small></div><div class="word-definition"><span class="pos">${esc(g.p)}</span>${esc(definition)}${known}</div>${textOnly?'':`<button class="word-audio" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}</button>`}${morph||extra.length||parts?`<div class="word-extra">${morph?esc(morph):''}${parts?`<br><span class="word-parts" lang="ja">构成：${esc(parts)}</span>`:''}${extra.map(x=>`<br><b>${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}`).join('')}</div>`:''}</div>`;
   }).join('')}</div><p class="footer-note">读音由分词词典生成，原文注音优先；专名、多音字与方言可能需要结合上下文核对。</p>`;
  }
@@ -84,12 +84,12 @@
   document.querySelectorAll('[data-select]').forEach(el=>el.classList.toggle('selected',Number(el.dataset.select)===index));
   document.querySelectorAll('[data-word]').forEach(el=>el.classList.toggle('selected',Number(el.dataset.word)===index));
   const wordSize=Math.max(32,Math.min(80,Math.floor(220/[...g.s].length/4)*4));
-  const {w,extra,base,definition:groupDefinition,morph,parts}=wordInfo(g);
+  const {w,extra,base,definition:groupDefinition,morph,parts,reviewed,contextual}=wordInfo(g);
   const months=[['一月','いちがつ'],['二月','にがつ'],['三月','さんがつ'],['四月','しがつ'],['五月','ごがつ'],['六月','ろくがつ'],['七月','しちがつ'],['八月','はちがつ'],['九月','くがつ'],['十月','じゅうがつ'],['十一月','じゅういちがつ'],['十二月','じゅうにがつ']];
   const month=months.findIndex(([s,k])=>s===g.s&&k===g.k)+1;
   const definition=month?`${g.s}；${month} 月，一年中的第 ${month} 个月。`:groupDefinition;
   const usage=month?`表示月份时，「月」读作「がつ」。${groups[index+1]?.s==='に'?`本句「${g.s}に」中的「に」表示事情发生的时间，意思是“在${g.s}”。`:''}`:'';
-  dialog('word-dialog','词语解释',`<div class="word-zoom-card"><div class="word-zoom-text" lang="ja">${esc(g.s)}</div><p class="word-zoom-kana" lang="ja">${esc(g.k)}</p><p class="word-zoom-romaji" lang="en">${esc(g.r)}</p>${base!==g.s?`<p class="word-zoom-base">原形 <span lang="ja">${esc(base)}</span></p>`:''}</div><div class="word-zoom-size"><label for="word-zoom-size">字形大小</label><span aria-hidden="true">小</span><input id="word-zoom-size" type="range" min="32" max="128" step="4" value="${wordSize}"><span aria-hidden="true">大</span></div><p class="word-zoom-meaning"><span class="pos">${esc(g.p)}</span>${esc(definition)}${w.auto&&!month?' <span class="auto">机器参考</span>':''}</p>${usage?`<p class="word-zoom-note">${esc(usage)}</p>`:''}${morph||extra.length||parts?`<div class="word-zoom-note">${esc(morph)}${parts?`<p class="word-parts" lang="ja">构成：${esc(parts)}</p>`:''}${extra.map(x=>`<p><b lang="ja">${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}</p>`).join('')}</div>`:''}${textOnly?'':`<button class="primary word-zoom-play" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}听这个词</button>`}`);
+  dialog('word-dialog','词语解释',`<div class="word-zoom-card"><div class="word-zoom-text" lang="ja">${esc(g.s)}</div><p class="word-zoom-kana" lang="ja">${esc(g.k)}</p><p class="word-zoom-romaji" lang="en">${esc(g.r)}</p>${base!==g.s?`<p class="word-zoom-base">原形 <span lang="ja">${esc(base)}</span></p>`:''}</div><div class="word-zoom-size"><label for="word-zoom-size">字形大小</label><span aria-hidden="true">小</span><input id="word-zoom-size" type="range" min="32" max="128" step="4" value="${wordSize}"><span aria-hidden="true">大</span></div><p class="word-zoom-meaning"><span class="pos">${esc(g.p)}</span>${esc(definition)}${contextual?' <span class="pos">本句释义</span>':!reviewed&&!month?' <span class="auto" title="自动生成，尚未按本句核对">词义待核对</span>':''}</p>${usage?`<p class="word-zoom-note">${esc(usage)}</p>`:''}${morph||extra.length||parts?`<div class="word-zoom-note">${esc(morph)}${parts?`<p class="word-parts" lang="ja">构成：${esc(parts)}</p>`:''}${extra.map(x=>`<p><b lang="ja">${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}</p>`).join('')}</div>`:''}${textOnly?'':`<button class="primary word-zoom-play" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}听这个词</button>`}`);
   $('#word-dialog').style.setProperty('--word-zoom-size',wordSize+'px');
  }
  function grammarHTML(){

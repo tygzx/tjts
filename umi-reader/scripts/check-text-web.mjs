@@ -102,6 +102,15 @@ try {
   click('.jp-token[aria-label="查看 の"]');
   assert.match(doc.querySelector('.word-zoom-meaning').textContent, /助词/);
   w.readerBack();
+  click('#next');
+  const erakuRow = doc.querySelector('[aria-label="放大词语：えらく"]').closest('.word-row');
+  assert.match(erakuRow.querySelector('.word-definition').textContent, /非常.*累得够呛.*本句释义/);
+  assert.equal(erakuRow.querySelector('.auto'), null);
+  click('.jp-token[aria-label="查看 えらく"]');
+  assert.match(doc.querySelector('.word-zoom-meaning').textContent, /非常.*累得够呛.*本句释义/);
+  assert.doesNotMatch(doc.querySelector('.word-zoom-meaning').textContent, /太棒了|待核对/);
+  noMedia();w.readerBack();
+  click('#prev');
   click('#prev');
   click('[data-tab="grammar"]');
   assert(doc.querySelectorAll('.grammar-item').length > 0);

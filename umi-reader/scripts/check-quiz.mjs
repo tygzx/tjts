@@ -22,6 +22,9 @@ const kana=value=>value.normalize('NFKC').replace(/[ァ-ヶ]/g,c=>String.fromCha
 const grouped=line=>study.create(book,line);
 const openingRounds=Array.from({length:12},(_,i)=>create(book,1,{limit:20,rng:seed(i+1)})).flat();
 const answerOf=q=>q.choices.find(c=>c.id===q.answerId).text;
+const erakuRounds=Array.from({length:12},(_,i)=>create(book,3,{limit:20,rng:seed(i+71)})).flat();
+const erakuQuestions=erakuRounds.filter(q=>q.focus==='えらく'&&q.kind==='meaning');
+assert(erakuQuestions.length>0);for(const q of erakuQuestions){assert.match(answerOf(q),/非常.*累得够呛/);assert.match(q.prompt,/本句/);assert.doesNotMatch(answerOf(q),/太棒了/);}
 const workplaceRounds=Array.from({length:8},(_,i)=>create(book,2,{limit:20,rng:seed(i+10)})).flat();
 assert(workplaceRounds.some(q=>q.focus==='市役所づとめ'&&q.kind==='meaning'&&/工作、任职/.test(answerOf(q))));
 assert(workplaceRounds.some(q=>q.focus==='市役所づとめ'&&q.kind==='reading'&&answerOf(q)==='しやくしょづとめ'));
@@ -50,7 +53,7 @@ for(let index=0;index<book.lines.length;index++){
     assert(matches.some(g=>kana(g.k)===correct[0].text),'Reading includes the complete inflected group');
     assert(q.choices.filter(c=>c.id!==q.answerId).every(c=>!surfaceReadings.get(q.focus).has(kana(c.text))),'Other known readings of the same spelling are not marked incorrect');
    }
-   else if(q.kind==='meaning')assert(matches.some(g=>(!g.words[0].auto||(['counter','number'].includes(g.rule)&&g.definition))&&(g.definition||g.words[0].d)===correct[0].text),'Only reviewed glossary or reviewed group meanings are scored');
+   else if(q.kind==='meaning')assert(matches.some(g=>study.describe(g).reviewed&&(g.definition||g.words[0].d)===correct[0].text),'Only reviewed glossary or reviewed group meanings are scored');
    else if(q.kind==='base')assert(matches.some(g=>(g.base||g.words[0].b)===correct[0].text&&['动词','形容词'].includes(g.p)),'Base form comes from the displayed learning group');
    else assert.fail('Unexpected quiz kind: '+q.kind);
   }
