@@ -4,7 +4,7 @@
  function clean(value,total){
   if(!value||typeof value!=='object'||!Number.isInteger(value.index)||value.index<0||value.index>=total||!Array.isArray(value.done))throw new Error('备份中的阅读进度不完整。');
   const result={index:value.index,done:[...new Set(value.done.filter(n=>Number.isInteger(n)&&n>=0&&n<total))],sentencePlayback:{}};
-  for(const key of ['ruby','romaji','kana','segmented','illustrations','roleVoices'])if(typeof value[key]==='boolean')result[key]=value[key];
+  for(const key of ['ruby','romaji','kana','meaning','segmented','illustrations','roleVoices'])if(typeof value[key]==='boolean')result[key]=value[key];
   if([.6,.8,1].includes(value.rate))result.rate=value.rate;
   if(value.sentencePlayback&&typeof value.sentencePlayback==='object')for(const [key,setting] of Object.entries(value.sentencePlayback)){
    if(!/^\d+$/.test(key)||Number(key)>=total||!setting||typeof setting!=='object')continue;
