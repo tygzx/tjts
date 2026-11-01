@@ -72,11 +72,11 @@ try {
   const tokens = [...doc.querySelectorAll('.jp-token ruby')].map(ruby => ruby.firstChild.textContent);
   for (const text of ['二度目', '合格して', 'というわけだ']) assert(tokens.includes(text), `Whole learning expression: ${text}`);
   const sentence = doc.querySelector('.japanese').cloneNode(true);
-  sentence.querySelectorAll('rt').forEach(rt => rt.remove());
+  sentence.querySelectorAll('rt,.jp-reading').forEach(rt => rt.remove());
   assert.equal(sentence.textContent, w.BOOK.lines[1].t.map(id => w.BOOK.words[id].s).join(''), 'Grouping retains exact source text');
   click('[data-toggle="kana"]');
-  assert(doc.querySelector('.kana-line').textContent.includes('というわけだ'));
-  assert(doc.querySelector('.romaji-line').textContent.length > 0);
+  assert([...doc.querySelectorAll('.jp-kana')].some(el => el.textContent === 'というわけだ'));
+  assert(doc.querySelector('.jp-romaji').textContent.length > 0);
   click('#translation-toggle');
   assert.equal(doc.querySelector('#translation').hidden, false);
 
