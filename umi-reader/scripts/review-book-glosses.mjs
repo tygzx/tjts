@@ -17,6 +17,9 @@ export const REVIEWED_GLOSSES={
  接续词:{しかし:'但是；然而。',でも:'但是；不过（连接前后内容）。'}
 };
 export function reviewBookGlosses(book){
+ // The full-book dataset supersedes this earlier opening-only glossary.
+ // Re-running a legacy build step must not restore its older definitions.
+ if(book.reviewSummary?.version)return 0;
  let changed=0;
  for(const w of book.words){const d=REVIEWED_GLOSSES[w.p]?.[w.b];if(d&&(w.d!==d||w.auto)){w.d=d;w.auto=false;changed++;}}
  return changed;

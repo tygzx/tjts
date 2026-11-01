@@ -36,12 +36,43 @@
  ];
  function contextualize(groups,book,line){
   const text=line.t.map(id=>book.words[id].s).join('');
-  return groups.map(g=>{
+  return reviewedSpans(groups.map(g=>{
    const found=CONTEXT_GLOSSES.find(([anchor,s])=>g.s===s&&text.includes(anchor));
    if(!found)return g;
    return {...g,definition:found[2],definitionReviewed:true,definitionScope:'context',
     base:found[3]||g.base||g.words[0].b,p:found[4]||g.p,glossNote:'本句释义按日文上下文校订；其他句子中的同形词可能有不同含义。'};
-  });
+  }),book,line);
+ }
+ // Reviewed multiword senses belong to an exact character span in this line.
+ // Split a previous display-only merge when necessary; source words/IDs survive.
+ function reviewedSpans(groups,book,line){
+  if(!line.studyGlosses?.length)return groups;
+  const words=line.t.map(id=>book.words[id]),boundary=new Map([[0,0]]);let length=0;
+  words.forEach((w,i)=>{length+=w.s.length;boundary.set(length,i+1);});
+  const spans=[];
+  for(const c of [...line.studyGlosses].sort((a,b)=>(b.end-b.start)-(a.end-a.start))){
+   if(!boundary.has(c.start)||!boundary.has(c.end)||spans.some(x=>c.start<x.end&&x.start<c.end))continue;
+   spans.push(c);
+  }
+  spans.sort((a,b)=>a.start-b.start);
+  for(const c of spans){
+   let offset=0,first=-1,last=-1;
+   const positions=groups.map(g=>{const start=offset;offset+=g.s.length;return {start,end:offset};});
+   positions.forEach((p,i)=>{if(p.end>c.start&&p.start<c.end){if(first<0)first=i;last=i;}});
+   if(first<0)continue;
+   const start=positions[first].start,end=positions[last].end;
+   const raw=(a,b)=>words.slice(boundary.get(a),boundary.get(b));
+   const simple=w=>({s:w.s,k:w.k,p:w.p,words:[w],audioParts:[{s:w.s,k:w.k,words:[w]}]});
+   const selected=raw(c.start,c.end),exact=start===c.start&&end===c.end;
+   const k=c.k||(exact?groups.slice(first,last+1).map(g=>g.k).join(''):selected.map(w=>w.k).join(''));
+   const group={s:c.s,k,p:c.p||(selected.length===1?selected[0].p:'固定表达'),words:selected,parts:selected,
+    audioParts:exact?groups.slice(first,last+1).flatMap(g=>g.audioParts):selected.map(w=>({s:w.s,k:w.k,words:[w]})),
+    base:c.base||(selected.length===1?selected[0].b:c.s),definition:c.definition,
+    definitionReviewed:true,definitionScope:'context',rule:'reviewed-context',
+    glossNote:'本句释义按日文上下文校订；其他句子中的同形词可能有不同含义。'};
+   groups.splice(first,last-first+1,...raw(start,c.start).map(simple),group,...raw(c.end,end).map(simple));
+  }
+  return groups;
  }
  function describe(g){
   const w=g.words[0],override=typeof g.definition==='string'&&g.definition.length>0;

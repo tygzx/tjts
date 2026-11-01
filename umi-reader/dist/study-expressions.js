@@ -8,6 +8,9 @@
  const predicate=g=>!!g&&(/動詞|动词|形容詞|形容词|助动词|固定表达/.test(g.p)||/^(?:だ|だった|です|でした|な|らしい|みたい)$/.test(g.s));
  const nominal=g=>!!g&&/名词|代名词/.test(g.p);
  const firstWord=g=>(g.parts||g.words||[])[0];
+ const lastWord=g=>(g?.parts||g?.words||[]).at(-1);
+ const pastPredicate=g=>!!g&&(lastWord(g)?.b==='た'||/^(?:だった|でした)$/.test(g.s)||(/动词|形容词/.test(g.p)&&/[ただ]$/.test(g.s)));
+ const experiencePredicate=(g,s)=>!!g&&/动词/.test(g.p)&&(pastPredicate(g)||(/(?:ある|あった)$/.test(s)&&(/基本形|連体形/.test(lastWord(g)?.f||'')||/[うくぐすつぬぶむるい]$/.test(g.s))));
  const explanatory=(gs,i)=>predicate(gs[i-1])||(gs[i]?.s==='な'&&nominal(gs[i-1]));
  const quote='(?:という|っていう|とゆう)';
 
@@ -35,7 +38,7 @@
  add('arrangement','(?:'+quote+')?ことに'+naru,'ことになる','结果成为……；事情被安排为……；决定要……。','与「ことにする」不同，重点是结果或安排如此，不突出自己主动决定。若前面是“这件事／那件事”，也可指事情变成某种情况。',(gs,i)=>gs[i-1]?.s!=='の');
  add('decision','ことに'+suru,'ことにする','决定做……；把……作为自己的决定或做法。','「ことにした」是“决定了”；「ことにしている」常表示自己一直遵守的做法。前面通常接动作或否定形式。');
  add('ability','こと(?:が|も|は|の)(?:できる|できた|できない|できなかった|できて|できず|出来る|出来た|出来ない)','ことができる','能够做……；可以做……。','前面的动作经「こと」名词化，再接「できる」。できない表示“不能”，できた表示“做到了”；も带“也”，は带强调或对比。');
- add('experience','こと(?:が|は|も)(?:ある|あった|ない|なかった)','ことがある','曾经做过……；有时会……。','前面是动词过去形时，通常表示经历；是原形时，常表示偶尔发生。否定形式表示没有相应经历或情况。',(gs,i,j)=>{const previous=gs[i-1],last=(previous?.parts||previous?.words||[]).at(-1);return !!previous&&((last?.b==='た')||(/动词/.test(previous.p)&&/る$/.test(previous.s)&&!/[なか]った$|ない$/.test(previous.s)&&/ある|あった/.test(gs.slice(i,j).map(g=>g.s).join(''))));});
+ add('experience','こと(?:が|は|も)(?:ある|あった|ない|なかった)','ことがある','曾经做过……；有时会……。','前面是动词过去形时，通常表示经历；是原形时，常表示偶尔发生。否定形式表示没有相应经历或情况。',(gs,i,j)=>experiencePredicate(gs[i-1],gs.slice(i,j).map(g=>g.s).join('')));
 
  add('expectation','はず'+copula,'はずだ','按理应该……；照已知的情况，本来应当……。','是基于依据的判断，不是命令别人“应该做”。「はずだった」表示本来应当如此，结果可能不如预期。');
  add('expectation-negative','はず(?:が|は|も)?'+negative,'はずがない','按理不可能……；应该不会……。','依据已知的情况作出否定判断。不能译成“没有打算”。');
@@ -70,6 +73,23 @@
 
  add('received-care','世話にな(?:る|った|りました)','世話になる','受到照顾；承蒙帮助。「世話になりました」用于感谢对方此前的照顾。','把「世話＋に＋なる」整体理解；有「お」时是更礼貌的说法。');
 
+ // The displayed gloss describes this inflected form, not just its positive
+ // dictionary pattern. Keep the source-derived reading, including は -> わ.
+ function inflectedMeaning(rule,s,previous){
+  if(rule.id==='experience'){
+   const negative=/ない$|なかった$/.test(s),past=pastPredicate(previous);
+   if(past)return {base:negative?'ことがない':'ことがある',definition:negative?'从未……过；没有过这样的经历。':'曾经……过；有过这样的经历。',note:'前面是过去形，整体表示经历。'+(negative?'这里是否定经历；「なかった」表示截至当时没有过。':'「ある／あった」表示这种经历曾经存在。')+' 若前面的动作本身是否定形或被动形，经历的内容也要保留该否定或被动。'};
+   return {definition:/あった$/.test(s)?'过去有时会……；当时也曾发生……这种情况。':'有时会……；也有……的时候。',note:'前面不是表示经历的过去形，这里说明某种情况有时会发生。前面若是「行かない」等否定形式，「行かないことがある」表示“有时不去”。'};
+  }
+  if(rule.id==='ability'){
+   if(/(?:ない|なかった|ず)$/.test(s))return {base:'ことができない',definition:/なかった$/.test(s)?'当时没能做……；未能做到……。':'不能做……；无法做到……。',note:'这是「ことができる」的否定形式。「も」可表示“连……也不能”，「は」可表示对比；「できず」用于接续下文。'};
+   if(/た$/.test(s))return {definition:'做到了……；当时能够做……。',note:'「できた」是过去形，表示当时有能力、有条件做到，或实际做到了。'};
+  }
+  if((rule.id==='arrangement'||rule.id==='likeness-change')&&/ならない$|ならなかった$/.test(s))return {definition:rule.id==='arrangement'?'并不成为……的结果或安排；没有变成……这种情况。':'并没有变得能够……；没有出现……这样的变化。',note:'这里的「なる」用了否定形。还需保留前面动作自身的否定，例如「行かないことにはならない」不能读成决定不去。'};
+  if((rule.id==='decision'||rule.id==='likeness-effort')&&/しない$|しなかった$/.test(s))return {definition:rule.id==='decision'?'不决定做……；不把……作为自己的做法。':'不刻意做到……；不作……那样的安排或动作。',note:'这里否定的是「する」。区别「行かないことにする」（决定不去）与「行くことにしない」（不决定去）；前后两处否定不能互换。'};
+  return {};
+ }
+
  function merge(groups){
   const out=[];
   for(let i=0;i<groups.length;){
@@ -85,8 +105,9 @@
    if(!match){out.push(groups[i++]);continue;}
    const chunk=groups.slice(i,match.end),rule=match.rule;
    const k=chunk.map(g=>g.k).join('');
-   const word={s:match.s,k,b:rule.base,p:'固定表达',d:rule.definition,f:'基本形',auto:false};
-   out.push({s:word.s,k,p:word.p,words:[word],parts:chunk.flatMap(g=>g.parts||g.words),audioParts:chunk.flatMap(g=>g.audioParts||[{s:g.s,k:g.k,p:g.p}]),definition:word.d,definitionReviewed:true,base:word.b,note:rule.note,rule:rule.id});
+   const meaning=inflectedMeaning(rule,match.s,groups[i-1]);
+   const word={s:match.s,k,b:meaning.base||rule.base,p:'固定表达',d:meaning.definition||rule.definition,f:'基本形',auto:false};
+   out.push({s:word.s,k,p:word.p,words:[word],parts:chunk.flatMap(g=>g.parts||g.words),audioParts:chunk.flatMap(g=>g.audioParts||[{s:g.s,k:g.k,p:g.p}]),definition:word.d,definitionReviewed:true,base:word.b,note:meaning.note||rule.note,rule:rule.id});
    if(rule.id==='rephrase'&&window.LESSON_NOTES?.some(n=>n[0]==='というか'&&n[1]===k+'。'))out.at(-1).audioTitle='というか';
    i=match.end;
   }

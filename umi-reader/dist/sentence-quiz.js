@@ -7,6 +7,7 @@
  const plain=value=>text(value).normalize('NFKC').replace(/[\p{P}\p{Z}\s]/gu,'');
  const hasLetters=value=>/[\p{L}\p{N}]/u.test(value);
  const isReading=value=>/^[\p{Script=Hiragana}\p{Script=Katakana}ー・\s]+$/u.test(value)&&!/^[ーっッ]+$/.test(value);
+ const quizUnit=w=>!/(?:标点|记号|片段)/.test(w.p||'')&&!/录入|需对照|需核对纸|原文.*疑/.test(w.d||w.definition||'');
  function hash(value){let h=2166136261;for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');}
  function shuffle(values,rng){const result=values.slice();for(let i=result.length-1;i>0;i--){const random=Math.max(0,Math.min(.999999999,Number(rng())||0)),j=Math.floor(random*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;}
  function add(map,key,value){if(!map.has(key))map.set(key,new Set());map.get(key).add(value);}
@@ -29,6 +30,7 @@
   const activeWords=new Set(book.lines.flatMap(line=>line.t));
   for(const id of activeWords){
    const w=book.words[id];
+   if(!quizUnit(w))continue;
    const b=text(w.b),d=text(w.d);
    if(b&&hasLetters(b)){add(data.surfaceBases,w.p+'\0'+w.s,b);add(baseRows,w.p,b);}
    if(w.s===b&&isReading(w.k))add(data.baseReadings,w.p+'\0'+b,kana(w.k));
@@ -38,6 +40,7 @@
   }
   data.groups.forEach((groups,index)=>{
    for(const g of groups){
+    if(!quizUnit(g)||g.words.some(w=>!quizUnit(w)))continue;
     if(g.p!=='标点'&&isReading(g.k)){add(readingRows,g.p,kana(g.k));add(data.surfaceReadings,g.s,kana(g.k));}
     const item=lexeme(g),{p,base,meaning}=item;
     if(base&&hasLetters(base)){add(data.surfaceBases,p+'\0'+g.s,base);add(baseRows,p,base);}
@@ -53,8 +56,14 @@
   for(const [key,values] of baseRows)data.bases.set(key,[...values]);
   data.translations=[...translations.values()];cache.set(book,data);return data;
  }
+ const meaningPartsCache=new Map();
+ function meaningParts(value){
+  const key=text(value);
+  if(!meaningPartsCache.has(key))meaningPartsCache.set(key,key.split(/[；;，,、（）()]/).map(plain).filter(Boolean));
+  return meaningPartsCache.get(key);
+ }
  function meaningOverlap(a,b){
-  const aa=text(a).split(/[；;，,、（）()]/).map(plain).filter(Boolean),bb=text(b).split(/[；;，,、（）()]/).map(plain).filter(Boolean);
+  const aa=meaningParts(a),bb=meaningParts(b);
   return aa.some(x=>bb.some(y=>x.includes(y)||y.includes(x)));
  }
  function options(kind,answer,candidates,rng){
@@ -106,7 +115,7 @@
   const count=Number.isFinite(Number(limit))?Math.max(0,Math.min(20,Math.floor(Number(limit)))):5;if(!count)return [];
   const random=typeof rng==='function'?rng:Math.random,data=prepare(book),descriptors=[];
   data.groups[index].forEach((g,groupIndex)=>{
-   const item=lexeme(g),{w,p,base}=item;if(g.p==='标点'||!hasLetters(g.s))return;
+   const item=lexeme(g),{w,p,base}=item;if(!quizUnit(g)||g.words.some(w=>!quizUnit(w))||!hasLetters(g.s))return;
    if(isReading(g.k)&&kana(g.s)!==kana(g.k))descriptors.push({g,groupIndex,kind:'reading'});
    if(item.reviewed&&item.meaning&&['名词','动词','形容词','副词','连体词','感叹词','固定表达'].includes(p))descriptors.push({g,groupIndex,kind:'meaning'});
    if(['动词','形容词'].includes(p)&&base&&base!==g.s&&(!w.auto||item.baseOverride))descriptors.push({g,groupIndex,kind:'base'});

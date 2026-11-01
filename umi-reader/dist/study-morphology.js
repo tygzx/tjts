@@ -54,10 +54,14 @@
  const digit={〇:0,零:0,一:1,二:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9};
  const kana=['ぜろ','いち','に','さん','よん','ご','ろく','なな','はち','きゅう'];
  const numberRE=/^[〇零一二三四五六七八九十百千万億0-9０-９]+$/;
+ const joinedCounterRE=new RegExp('^([〇零一二三四五六七八九十百千万億0-9０-９]+)('+Object.keys(COUNTERS).sort((a,b)=>b.length-a.length).join('|')+')(目)?$');
  function kanji(n){if(n===0)return '〇';let s='';for(const [v,u]of [[100000000,'億'],[10000,'万'],[1000,'千'],[100,'百'],[10,'十']]){if(n>=v){const q=Math.floor(n/v);s+=(q===1&&v<10000?'':kanji(q))+u;n%=v;}}return s+(n?'〇一二三四五六七八九'[n]:'');}
  function numberValue(surface){
   const ascii=surface.replace(/[０-９]/g,c=>String(c.charCodeAt(0)-0xff10));
   if(/^\d+$/.test(ascii)){const n=Number(ascii);return Number.isSafeInteger(n)&&n<=99999999?n:null;}
+  // Positional year notation (一九九一年／二〇二四年) is different from
+  // short approximate ranges such as 三四人, which must remain unparsed.
+  if(/^[〇零一二三四五六七八九]{3,8}$/.test(ascii))return Number([...ascii].map(c=>digit[c]).join(''));
   const s=ascii.replace(/\d+/g,x=>kanji(Number(x)));
   if(s==='〇'||s==='零')return 0;
   // Consecutive kanji digits (三四人) usually mean an approximate range, not 34.
@@ -73,14 +77,19 @@
   if(n>=10){const d=Math.floor(n/10);s+=(d===1?'':kana[d])+'じゅう';n%=10;}
   return s+(n?kana[n]:'');
  }
- function counterKana(n,c,previous){
+ function counterKana(n,c,previous,options={}){
   let reading=numberKana(n),tail=COUNTERS[c][0],ones=n%10;
   const replaceLast=(from,to)=>{if(reading.endsWith(from))reading=reading.slice(0,-from.length)+to;};
   if(['年','年間','年生','畳','畳半'].includes(c)&&ones===4)replaceLast('よん','よ');
   if(c==='人'&&n===1)return 'ひとり';if(c==='人'&&n===2)return 'ふたり';
   if(['人','人前'].includes(c)&&ones===4)replaceLast('よん','よ');
   if(['時','時半','時間'].includes(c)){if(ones===4)replaceLast('よん','よ');if(ones===7)replaceLast('なな','しち');if(ones===9)replaceLast('きゅう','く');}
-  if(c==='月'){if(n<1||n>12)return null;reading=({4:'し',7:'しち',9:'く'}[n]||reading);}
+  if(c==='月'){
+   // 一月に二回 is a frequency (ひとつき), unlike 一月の末 (January).
+   // Keep an explicitly reviewed duration reading, even without the に二回 cue.
+   if(n===1&&(options.reading==='ひとつき'||options.monthDuration))return 'ひとつき';
+   if(n<1||n>12)return null;reading=({4:'し',7:'しち',9:'く'}[n]||reading);
+  }
   if(c==='日'||c==='日間'){
    const special={1:previous&&/月$/.test(previous.s)?'ついたち':'いちにち',2:'ふつか',3:'みっか',4:'よっか',5:'いつか',6:'むいか',7:'なのか',8:'ようか',9:'ここのか',10:'とおか',14:'じゅうよっか',20:'はつか',24:'にじゅうよっか'};
    if(special[n])return special[n]+(c==='日間'?'かん':'');
@@ -126,6 +135,24 @@
  function create(book,line){
   let groups=legacy(book,line);
   for(let i=0;i<groups.length;i++){
+   // The tokenizer may already emit a whole counter (一週間／９時半).
+   // Apply the same reading rules without discarding its reviewed definition,
+   // original words or recorded audio chunks. 一人前 can mean "fully grown",
+   // and 一番 can mean "most", so their meaning is never replaced here.
+   const joined=groups[i].s.match(joinedCounterRE);
+   if(joined){
+    const n=numberValue(joined[1]),c=joined[2];
+    const following=groups.slice(i+1,i+5).map(g=>g.s).join('');
+    const monthDuration=c==='月'&&/^に[〇零一二三四五六七八九十百千万0-9０-９]+回/.test(following);
+    if(n!==null&&!(c==='分'&&/ぶん$/.test(groups[i].k))){
+     const k=counterKana(n,c,groups[i-1],{reading:groups[i].k,monthDuration});
+     if(k!==null){
+      const meaning=monthDuration&&n===1?{definition:'一个月；本句用于每月几次的频率。',definitionReviewed:true}:c==='日'&&n===1&&k==='ついたち'?{definition:'每月一号；本句表示日期。',definitionReviewed:true}:{};
+      groups[i]={...groups[i],k:k+(joined[3]?'め':''),...meaning};
+     }
+    }
+    continue;
+   }
    if(!numberRE.test(groups[i].s))continue;
    let end=i+1;while(end<groups.length&&numberRE.test(groups[end].s))end++;
    const raw=groups.slice(i,end).map(g=>g.s).join(''),n=numberValue(raw);
@@ -134,11 +161,13 @@
    if(Object.hasOwn(COUNTERS,c)){
     // 分 can instead be a share (ぶん); never silently relabel that as minutes.
     if(c==='分'&&groups[end].k==='ぶん'){i=end-1;continue;}
-    const k=counterKana(n,c,groups[i-1]);if(k===null){i=end-1;continue;}
+    const following=groups.slice(end+1,end+5).map(g=>g.s).join('');
+    const monthDuration=c==='月'&&/^に[〇零一二三四五六七八九十百千万0-9０-９]+回/.test(following);
+    const k=counterKana(n,c,groups[i-1],{monthDuration});if(k===null){i=end-1;continue;}
     let finish=end+1,isOrdinal=c==='度目';
     if(groups[finish]?.s==='目'&&groups[finish].k==='め'){finish++;isOrdinal=true;}
     const s=groups.slice(i,finish).map(g=>g.s).join('');
-    const definition=isOrdinal?`第 ${n} ${COUNTERS[c][1].replace('（序数）','')}`:`${n} ${COUNTERS[c][1]}`;
+    const definition=monthDuration&&n===1?'一个月；本句用于每月几次的频率。':c==='日'&&n===1&&k==='ついたち'?'每月一号；本句表示日期。':isOrdinal?`第 ${n} ${COUNTERS[c][1].replace('（序数）','')}`:`${n} ${COUNTERS[c][1]}`;
     groups.splice(i,finish-i,merge(groups.slice(i,finish),'counter',`数字和量词作为一个单位学习。${c==='日'&&n===1?'这里若表示一天，读「いちにち」；每月一号读「ついたち」，依上下文区分。':''}`,{k:k+(finish>end+1?'め':''),base:s,definition,definitionReviewed:true,p:'名词'}));
    }else if(end>i+1){groups.splice(i,end-i,merge(groups.slice(i,end),'number','把组成数值的数字连起来读。',{k:numberKana(n),base:raw,definition:String(n),definitionReviewed:true,p:'名词'}));}
   }
