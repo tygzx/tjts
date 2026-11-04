@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node umi-reader/scripts/serve.mjs",
-    "check": "node umi-reader/scripts/check-study-groups.mjs && node umi-reader/scripts/check-fullbook-review-engine.mjs && node umi-reader/scripts/check-fullbook-review.mjs && node umi-reader/scripts/check-counter-readings.mjs && node umi-reader/scripts/check-quiz.mjs && node umi-reader/scripts/check-text-web.mjs"
+    "check": "node umi-reader/scripts/check-study-groups.mjs && node umi-reader/scripts/check-fullbook-review-engine.mjs && node umi-reader/scripts/check-fullbook-review.mjs && node umi-reader/scripts/check-counter-readings.mjs && node umi-reader/scripts/check-quiz.mjs && node umi-reader/scripts/check-text-web.mjs && node umi-reader/scripts/check-challenge-quiz.mjs",
+    "check:challenge": "node umi-reader/scripts/check-challenge-quiz.mjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"
