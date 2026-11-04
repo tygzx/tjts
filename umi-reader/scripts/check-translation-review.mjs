@@ -1,0 +1,46 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import {JSDOM} from 'jsdom';
+import {applyTranslationReview,reviewedGrammar,loadTranslationReview} from './apply-translation-review.mjs';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),read=file=>fs.readFileSync(path.join(root,'dist',file),'utf8');
+const c={window:{}};for(const file of ['book.js','grammar.js'])vm.runInNewContext(read(file),c);
+const {BOOK:book,CURATED:curated}=c.window,data=loadTranslationReview();
+assert.equal(book.lines.length,2640);assert.equal(data.entries.length,173);assert.equal(data.entries.filter(e=>e.note).length,29);
+const source=book.lines.map(l=>l.t.map(id=>book.words[id].s).join('')).join('\n');
+const vocabularyReview=JSON.parse(fs.readFileSync(path.join(root,'data/fullbook-review.json'),'utf8'));
+assert.equal(crypto.createHash('sha256').update(source).digest('hex'),vocabularyReview.sourceSha256,'All original Japanese remains unchanged');
+for(const e of data.entries){
+ assert.equal(book.lines[e.sentence-1].zh,e.zh);
+ assert.equal(curated[e.sentence-1].zh,e.zh,'Curated display cannot shadow corrected text');
+ assert.equal(curated[e.sentence-1].translationReview.revision,data.revision);
+ assert.equal(curated[e.sentence-1].translationReview.note,e.note);
+}
+assert.match(curated[1].note,/というか/,'Keep the original beginner explanation');
+const old=JSON.stringify(book);applyTranslationReview(book,data);assert.equal(JSON.stringify(book),old,'Review reapplication is idempotent');
+assert.equal(reviewedGrammar(read('grammar.js'),data),read('grammar.js'),'Generated overlay is idempotent');
+const bad=structuredClone(data);bad.entries[172].jp+='誤';
+assert.throws(()=>applyTranslationReview(book,bad),/source mismatch/);assert.equal(JSON.stringify(book),old,'Reject all changes if any source span moves');
+assert.match(book.lines[60].zh,/差一点到六点/);
+assert.match(book.lines[67].zh,/山尾忠志/);
+assert.match(book.lines[135].zh,/小浜祐实/);
+assert.match(book.lines[163].zh,/她并不喜欢我/);
+assert.match(book.lines[166].zh,/她没有联系我的打算/);
+assert.equal(book.lines[173].translationReview,undefined,'Do not label later sentences as reviewed');
+
+const dom=new JSDOM('<div id="app"></div>',{url:'http://127.0.0.1:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document;
+w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:163,illustrations:false}));
+for(const file of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',file)))w.eval(read(file));
+d.querySelector('#translation-toggle').click();
+assert.match(d.querySelector('#translation').textContent,/她并不喜欢我/);
+assert.match(d.querySelector('#translation').textContent,/已对照日文校订/);
+assert.match(d.querySelector('#translation').textContent,/不是叙述者已经证实/);
+const jump=n=>{d.querySelector('#jump-number').value=String(n);d.querySelector('#jump').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));d.querySelector('#translation-toggle').click();};
+jump(82);assert.match(d.querySelector('#translation').textContent,/相当于高一、高二、高三/);
+jump(174);assert.doesNotMatch(d.querySelector('#translation').textContent,/已对照日文校订/);
+dom.window.close();
+console.log(JSON.stringify({translationReview:'passed',reviewed:173,notes:29,sourcePreserved:true,displayAndNotes:true,staleSourceRejected:true}));
