@@ -95,3 +95,15 @@ WanaKana 与分词词典相关声明见 `umi-reader/dist/third-party-licenses.tx
 `umi-reader/data/translation-review.json`（完整工程为 `data/translation-review.json`）保留逐句原文、译文和译注；应用脚本核对原文与校验和后才更新，保留原有语法笔记。`npm run check:translations` 检查数据、错位保护和页面显示。阅读器的正文、上下文和测验提示使用同一份新译文。
 
 仓库仍不含音频和插图。Mac 上更新代码后照常用 `npm start` 启动。
+
+## 词形与助词逐步讲解（2026-11-05）
+
+词语浮窗、词语列表和语法笔记现在共用“基本形式／结构 → 变化步骤 → 本句理解”。气的表达按完整单位学习：例如 `気がする → 気がした → 気もした`，分别解释动词过去形和助词替换。全书命中的 34 处気が／も／はする系列统一处理；包含否定和接续形式，不跨标点合并。
+
+开篇 23 个学习单位中的 33 个重点表达已按原文语境逐项编写，含助词替换、叠加、省略、が／の交替、口语缩约、土佐方言、被动、可能和双重否定。第 11 句有主干与前后句连接说明。常见动词词形规则另外给出 3,984 处拆解，连同表达讲解覆盖 1,858 个学习单位；这不是全书逐句语法审校。没有精确重建出原文词形的复杂结构不自动补写。
+
+修复了“本句释义已校订”提示覆盖原有变化说明的问题，助词区优先显示当前上下文释义。`data/grammar-analysis.json` 保存原句和字符范围，`scripts/prepare-grammar-analysis.mjs` 维护逐项笔记；`scripts/build-study-analysis.mjs` 在核对原文后，把数据和 `scripts/lib/study-analysis-runtime.js` 编入原有 `dist/study-groups.js`，无需新增网页加载顺序。`npm run check:analysis` 检查词形重建、原文保留、否定、错误匹配防护和浮窗显示。
+
+助词通用知识参考[东京外国语大学：副助词](https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/095.html)及[助词解说](https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/052.html)，具体小说语境为本项目逐句分析。
+
+仓库仍不包含音频或插图，Mac 的命令行启动方式不变。

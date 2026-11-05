@@ -99,3 +99,15 @@
 .quiz-help .outline{font-size:12px;min-height:40px}
 .quiz-hint{border-left:3px solid #8aabb9;background:#f5f8fa;padding:12px 16px;margin-bottom:18px;font-size:14px;line-height:1.8;overflow-wrap:anywhere}
 .quiz-hint p{margin:5px 0}.quiz-hint small{color:var(--muted)}
+
+.sentence-analysis{margin:24px 0}.sentence-analysis>h3{font-size:18px;margin:0 0 10px}
+.sentence-guide{padding:16px 18px;background:#edf5f8;border-left:3px solid #2c677b;line-height:1.9;font-size:14px}
+.form-analysis{border:1px solid #dce7ed;border-radius:10px;background:#fbfdfe;margin:12px 0;padding:0 16px;text-align:left;font-size:14px;line-height:1.8;overflow-wrap:anywhere}
+.form-analysis summary{padding:13px 0;cursor:pointer;color:#194e64;font-size:17px}
+.form-analysis summary small{display:block;margin-left:17px;font-size:12px;color:#718591;font-family:inherit}
+.form-analysis .analysis-base{padding-bottom:12px;border-bottom:1px solid #e3ecf0;font-size:13px}
+.form-analysis ol{padding-left:24px}.form-analysis li{padding-left:4px;margin:14px 0}
+.form-analysis li>b{display:block;color:#194e64;font-size:17px;font-weight:500}
+.form-analysis li p{margin:5px 0;line-height:1.85}.analysis-meaning{padding:12px;background:#edf5f8;border-radius:6px}
+.analysis-caution{font-size:13px;color:#616f78}.word-analysis{width:100%;min-width:0}.word-extra.word-analysis{border-top:0;padding-top:0}
+@media(max-width:600px){.form-analysis{padding:0 12px}.form-analysis summary{font-size:16px}.form-analysis li>b{font-size:16px}}
