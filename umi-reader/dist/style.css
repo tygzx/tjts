@@ -111,3 +111,20 @@
 .form-analysis li p{margin:5px 0;line-height:1.85}.analysis-meaning{padding:12px;background:#edf5f8;border-radius:6px}
 .analysis-caution{font-size:13px;color:#616f78}.word-analysis{width:100%;min-width:0}.word-extra.word-analysis{border-top:0;padding-top:0}
 @media(max-width:600px){.form-analysis{padding:0 12px}.form-analysis summary{font-size:16px}.form-analysis li>b{font-size:16px}}
+
+/* Explanations distinguish a contextual relationship from a general lookup. */
+.sentence-guide>strong{display:block;color:var(--blue);margin-bottom:6px}.sentence-guide>p{margin:0}
+.particle-study{padding:18px;background:#fff;border:1px solid var(--line);border-radius:10px;margin:20px 0}
+.particle-study h3{font-size:16px}.particle-study .outline{font-size:13px}
+.particle-links,.particle-picker{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0}
+.particle-links>span{font-size:12px;color:#657b88;flex-basis:100%}
+.particle-links .outline,.particle-picker .outline{min-height:40px;padding:6px 13px;line-height:1.6;font-size:15px;white-space:normal}
+.particle-links button:focus-visible,.particle-picker button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.particle-detail{border-top:1px solid var(--line);padding-top:12px}.particle-detail dt{font-weight:600;color:var(--blue);margin-top:12px}.particle-detail dd{margin:5px 0 12px;line-height:1.9}
+#particle-dialog{inset:0;width:min(740px,calc(100vw - 24px));max-width:calc(100vw - 24px);height:fit-content;max-height:calc(100dvh - 32px);margin:auto;border-radius:16px;overflow:auto}
+#particle-dialog .drawer-inner{min-height:0;padding:24px}.particle-entry h3{font-size:19px;line-height:1.7;margin-top:20px}.particle-entry{line-height:1.9;overflow-wrap:anywhere;font-size:15px}
+.particle-question{background:#edf5f8;border-left:3px solid #2c677b;padding:12px 16px}
+.particle-entry dl{margin:20px 0}.particle-entry dt{color:var(--blue);font-size:18px;font-weight:500;margin-top:16px}.particle-entry dd{margin:5px 0 16px;font-size:14px}
+.particle-comparison{border-top:1px solid var(--line);padding-top:16px}.particle-comparison p{margin:8px 0 16px}
+.particle-scope{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}.particle-sources{font-size:12px;color:#6b7f8b;line-height:1.9;overflow-wrap:anywhere}.particle-sources a{color:#346b82}
+@media(max-width:600px){#particle-dialog .drawer-inner{padding:18px}.particle-entry h3{font-size:18px}.particle-entry dt{font-size:16px}.particle-study{padding:14px}.particle-detail dd{font-size:13px}}

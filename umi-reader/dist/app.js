@@ -47,8 +47,7 @@
  function grammarFor(){
   const text=lineText(state.index),cur=CURATED[state.index];
   if(cur?.g)return cur.g.map((g,i)=>({at:text.indexOf(g[0]),quote:g[0],title:g[1],body:g[2]}));
-  const explained=window.STUDY_GROUPS.analyses?.(B,B.lines[state.index],groups).items.filter(a=>a.kind==='本句逐项讲解')||[];
-  return GRAMMAR.flatMap(([pattern,title,body])=>{const m=text.match(new RegExp(pattern));return m&&!explained.some(a=>m.index>=a.start&&m.index+m[0].length<=a.end)?[{at:m.index,quote:m[0],title,body}]:[];}).sort((a,b)=>a.at-b.at);
+  return window.STUDY_GROUPS.grammarHints(B,B.lines[state.index],GRAMMAR,groups);
  }
  function setIndex(n){stop();$('#word-dialog')?.close();quizRound=null;state.index=Math.max(0,Math.min(B.lines.length-1,n));selected=-1;translation=false;contextPage=null;sidebar=false;save();render();window.scrollTo(0,0);}
  function toast(text){$('.toast')?.remove();const el=document.createElement('div');el.className='toast';el.role='status';el.textContent=text;document.body.append(el);clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.remove(),3500);}
@@ -93,12 +92,38 @@
   const parts=g.rule?(g.parts||g.words).map(x=>x.s).join(' ＋ '):'';
   return {w,extra,base,definition,morph,parts,reviewed,contextual};
  }
+
+ function particleLinksHTML(keys,label='相关助词用法对照'){
+  return keys?.length?'<div class="particle-links"><span>'+esc(label)+'</span>'+[...new Set(keys)].map(key=>'<button class="outline" data-particle-guide="'+esc(key)+'">'+esc(key)+'</button>').join('')+'</div>':'';
+ }
+ function handbookEntryHTML(x){
+  return '<article class="particle-entry"><h3>'+esc(x.title)+'</h3><p class="particle-question">先问自己：'+esc(x.question)+'</p><dl>'+x.patterns.map(p=>'<dt lang="ja">'+esc(p.form)+'</dt><dd>'+esc(p.meaning)+'</dd>').join('')+'</dl><div class="particle-comparison"><strong>相近用法怎么分</strong><p>'+esc(x.contrast)+'</p></div><p class="analysis-caution">'+esc(x.caution)+'</p></article>';
+ }
+ function openParticleGuide(key=''){
+  const entries=window.STUDY_GROUPS.particleHandbook?.()||[],item=entries.find(x=>x.key===key);
+  const principles=window.STUDY_GROUPS.particlePrinciples?.()||[];
+  const content=item?'<button class="outline" data-particle-guide="">查看全部助词</button>'+handbookEntryHTML(item):'<p class="hint">先看句子里的连接关系，再比较相近用法。这里的例句用于讲解，未改动小说原文。</p><div class="particle-picker">'+entries.map(x=>'<button class="outline" data-particle-guide="'+esc(x.key)+'">'+esc(x.key)+'</button>').join('')+'<div class="particle-principles">'+principles.map(x=>'<details class="form-analysis"><summary>'+esc(x.title)+'</summary><p>'+esc(x.body)+'</p></details>').join('')+'</div>';
+  const sources=window.STUDY_GROUPS.particleReferences?.()||[];
+  dialog('particle-dialog',item?item.key+' · 助词用法对照':'助词指南',content+'<p class="hint particle-scope">通用用法对照不等于本句用法判定。小说里的具体连接关系，请看词语浮窗或语法笔记中标注的“本句逐项讲解”。</p><p class="particle-sources">语法核对参考：'+sources.map(x=>'<a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+esc(x.title)+'</a>').join(' · ')+'</p>');
+ }
+
+ function particleAudioHTML(){
+  const items=groups.map((g,i)=>({g,i,clip:particleAudioFor(g)})).filter(({g,clip})=>g.p==='助词'&&clip);
+  if(!items.length)return '';
+  return '<details class="form-analysis particle-audio"><summary>原有助词简述 · 可朗读</summary><p class="hint">这些是已有的通用短讲解，未包含新增的本句关系分析。请以上方本句解释为准。</p>'+items.map(({g,i,clip})=>'<div class="grammar-heading"><h3 lang="ja">'+esc(g.s)+'</h3>'+lessonButton('particle',i,clip)+'</div><p>'+esc(clip.text)+'</p>').join('')+'</details>';
+ }
+
+ function particleStudyHTML(){
+  const keys=[...new Set(groups.flatMap(g=>g.particleKeys||[]))];
+  return particleAudioHTML()+'<section class="particle-study"><div class="grammar-heading"><h3>助词怎么连接句子</h3><button class="outline" data-particle-guide="">打开完整助词指南</button></div><p class="hint">点下面的词可查连接方式、易混用法和对比例句。相同助词在不同句子里可能有不同作用，不能直接套用第一条意思。</p>'+particleLinksHTML(keys,'本句涉及的用法')+'</section>';
+ }
+
  function analysisHTML(a,open=false){
-  return `<details class="form-analysis" ${open?'open':''}><summary><span lang="ja">${esc(a.quote)}</span><small>${esc(a.kind)} · 为什么这样写</small></summary><p class="analysis-base">基本形式／结构：<b lang="ja">${esc(a.base)}</b></p><ol>${a.steps.map(s=>`<li><b lang="ja">${esc(s.form)}</b><p>${esc(s.why)}</p></li>`).join('')}</ol><p class="analysis-meaning"><b>本句理解：</b>${esc(a.meaning)}</p>${a.warning?`<p class="analysis-caution">${esc(a.warning)}</p>`:''}</details>`;
+  return `<details class="form-analysis" ${open?'open':''}><summary><span lang="ja">${esc(a.quote)}</span><small>${esc(a.kind)} · 为什么这样写</small></summary><p class="analysis-base">基本形式／结构：<b lang="ja">${esc(a.base)}</b></p><ol>${a.steps.map(s=>`<li><b lang="ja">${esc(s.form)}</b><p>${esc(s.why)}</p></li>`).join('')}</ol>${a.particleDetails?`<dl class="particle-detail"><dt>连接谁与谁</dt><dd>${esc(a.particleDetails.relation)}</dd><dt>为什么用这里的助词</dt><dd>${esc(a.particleDetails.reason)}</dd><dt>换一种说法比较（教学改写）</dt><dd>${esc(a.particleDetails.contrast)}</dd></dl>`:''}${particleLinksHTML(a.particleKeys)}<p class="analysis-meaning"><b>本句理解：</b>${esc(a.meaning)}</p>${a.warning?`<p class="analysis-caution">${esc(a.warning)}</p>`:''}</details>`;
  }
  function syntaxHTML(){
-  const a=window.STUDY_GROUPS.analyses?.(B,B.lines[state.index],groups);if(!a?.items.length)return '';
-  return `<section class="sentence-analysis"><h3>从基本形式读懂本句</h3><p class="hint">先看完整表达，再看动词活用、助词替换或叠加。点击条目可展开。标为“常见活用拆解”的内容是词形规则提示，不代表整句已逐项讲解。</p>${a.guide?`<p class="sentence-guide">${esc(a.guide)}</p>`:''}${a.items.map(x=>analysisHTML(x,x.kind==='本句逐项讲解')).join('')}</section>`;
+  const a=window.STUDY_GROUPS.analyses?.(B,B.lines[state.index],groups);if(!a||(!a.items.length&&!a.guide))return '';
+  return `<section class="sentence-analysis"><h3>从基本形式读懂本句</h3><p class="hint">先看整句主干，再看每个表达连接了谁、为何用这个助词，以及换一种说法有什么区别。标为“常见活用拆解”的条目只解释词形；本轮主干导读覆盖开篇第 1—173 句，其他句子仍需逐句补充。新增详细讲解目前为文字。</p>${a.guide?`<div class="sentence-guide"><strong>整句怎么连起来</strong><p>${esc(a.guide)}</p></div>`:''}${a.items.map(x=>analysisHTML(x,x.kind==='本句逐项讲解')).join('')}</section>`;
  }
  function wordsHTML(){
   const meaningful=groups.filter(g=>g.p!=='标点');
@@ -118,13 +143,12 @@
   const month=months.findIndex(([s,k])=>s===g.s&&k===g.k)+1;
   const definition=month?`${g.s}；${month} 月，一年中的第 ${month} 个月。`:groupDefinition;
   const usage=month?`表示月份时，「月」读作「がつ」。${groups[index+1]?.s==='に'?`本句「${g.s}に」中的「に」表示事情发生的时间，意思是“在${g.s}”。`:''}`:'';
-  dialog('word-dialog','词语解释',`<div class="word-zoom-card"><div class="word-zoom-text" lang="ja">${esc(g.s)}</div><p class="word-zoom-kana" lang="ja">${esc(g.k)}</p><p class="word-zoom-romaji" lang="en">${esc(g.r)}</p>${base!==g.s?`<p class="word-zoom-base">原形 <span lang="ja">${esc(base)}</span></p>`:''}</div><div class="word-zoom-size"><label for="word-zoom-size">字形大小</label><span aria-hidden="true">小</span><input id="word-zoom-size" type="range" min="32" max="128" step="4" value="${wordSize}"><span aria-hidden="true">大</span></div><p class="word-zoom-meaning"><span class="pos">${esc(g.p)}</span>${esc(definition)}${contextual?' <span class="pos">本句释义</span>':!reviewed&&!month?' <span class="auto" title="自动生成，尚未按本句核对">词义待核对</span>':''}</p>${g.analyses?.length?`<section class="word-analysis" aria-label="本句形式讲解">${g.analyses.map(a=>analysisHTML(a,true)).join('')}</section>`:''}${usage?`<p class="word-zoom-note">${esc(usage)}</p>`:''}${morph||extra.length||parts?`<div class="word-zoom-note">${esc(morph)}${parts?`<p class="word-parts" lang="ja">构成：${esc(parts)}</p>`:''}${extra.map(x=>`<p><b lang="ja">${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}</p>`).join('')}</div>`:''}${textOnly?'':`<button class="primary word-zoom-play" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}听这个词</button>`}`);
+  dialog('word-dialog','词语解释',`<div class="word-zoom-card"><div class="word-zoom-text" lang="ja">${esc(g.s)}</div><p class="word-zoom-kana" lang="ja">${esc(g.k)}</p><p class="word-zoom-romaji" lang="en">${esc(g.r)}</p>${base!==g.s?`<p class="word-zoom-base">原形 <span lang="ja">${esc(base)}</span></p>`:''}</div><div class="word-zoom-size"><label for="word-zoom-size">字形大小</label><span aria-hidden="true">小</span><input id="word-zoom-size" type="range" min="32" max="128" step="4" value="${wordSize}"><span aria-hidden="true">大</span></div><p class="word-zoom-meaning"><span class="pos">${esc(g.p)}</span>${esc(definition)}${contextual?' <span class="pos">本句释义</span>':!reviewed&&!month?' <span class="auto" title="自动生成，尚未按本句核对">词义待核对</span>':''}</p>${g.analyses?.length?`<section class="word-analysis" aria-label="本句形式讲解">${g.analyses.map(a=>analysisHTML(a,true)).join('')}</section>`:''}${usage?`<p class="word-zoom-note">${esc(usage)}</p>`:''}${morph||extra.length||parts?`<div class="word-zoom-note">${esc(morph)}${parts?`<p class="word-parts" lang="ja">构成：${esc(parts)}</p>`:''}${extra.map(x=>`<p><b lang="ja">${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}</p>`).join('')}</div>`:''}${textOnly?'':`${particleLinksHTML(g.particleKeys)}<button class="primary word-zoom-play" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}听这个词</button>`}`);
   $('#word-dialog').style.setProperty('--word-zoom-size',wordSize+'px');
  }
  function grammarHTML(){
   const gs=grammarFor(),cur=CURATED[state.index];
-  const functions=groups.filter(g=>g.p==='助词'||g.p==='助动词');
-  return `${syntaxHTML()}${cur?.note?`<div class="beginner-note"><strong>这一句怎么读</strong>${esc(cur.note)}</div>`:''}<p class="hint">${cur?.g?'本句讲解':'按出现位置排列的句型提示；自动匹配，请结合词语和上下文判断。'}${textOnly?'':' · 点“听讲解”，先听日文，再听中文解释。'}</p><div class="grammar-list">${gs.map((g,i)=>`<article class="grammar-item"><span class="word-number">${String(i+1).padStart(2,'0')}</span><div><div class="grammar-heading"><h3>${esc(g.title)}</h3>${lessonButton('grammar',g.title,grammarAudioFor(g.title))}</div><p>${esc(g.body)}</p><span class="grammar-quote" lang="ja">${esc(g.quote)}</span></div></article>`).join('')}</div>${!gs.length?'<p class="empty-note">本行没有匹配到额外句型。先沿着词语顺序阅读，留意下面的助词以及动词词尾。</p>':''}${functions.length?`<h3 style="font-size:15px;margin-top:25px">本句的助词与语气 · 按顺序</h3><div class="grammar-list">${functions.map(g=>`<article class="grammar-item"><span class="word-number">${groups.indexOf(g)+1}</span><div><div class="grammar-heading"><h3 lang="ja">${esc(g.s)} <span class="quiet">${esc(g.r)}</span></h3>${lessonButton('particle',groups.indexOf(g),particleAudioFor(g))}</div><p>${esc(window.STUDY_GROUPS.describe(g).definition)}</p></div></article>`).join('')}</div>`:''}${B.lines[state.index].notes.length?`<p class="hint">原文编辑注：${esc(B.lines[state.index].notes.join('；'))}</p>`:''}`;
+  return `${syntaxHTML()}${particleStudyHTML()}${cur?.note?`<div class="beginner-note"><strong>这一句怎么读</strong>${esc(cur.note)}</div>`:''}<p class="hint">${cur?.g?'本句讲解':'按出现位置排列的句型提示；自动匹配，请结合词语和上下文判断。'}${textOnly?'':' · 下方“听讲解”播放原有句型简述，未包含上方新增的详细分析。'}</p><div class="grammar-list">${gs.map((g,i)=>`<article class="grammar-item"><span class="word-number">${String(i+1).padStart(2,'0')}</span><div><div class="grammar-heading"><h3>${esc(g.title)}</h3>${lessonButton('grammar',g.title,grammarAudioFor(g.title))}</div><p>${esc(g.body)}</p><span class="grammar-quote" lang="ja">${esc(g.quote)}</span></div></article>`).join('')}</div>${!gs.length?'<p class="empty-note">本行没有匹配到额外句型。先沿着词语顺序阅读，留意下面的助词以及动词词尾。</p>':''}${B.lines[state.index].notes.length?`<p class="hint">原文编辑注：${esc(B.lines[state.index].notes.join('；'))}</p>`:''}`;
  }
  function contextHTML(){
   const page=contextPage??Math.floor(state.index/12),start=page*12;
@@ -163,6 +187,7 @@
  document.addEventListener('error',e=>{if(!e.target?.matches?.('.scene-image,.scene-full'))return;const src=e.target.getAttribute('src');if(!src||unavailableArt.has(src))return;unavailableArt.add(src);e.target.closest('dialog')?.close();render();},true);
  document.addEventListener('click',e=>{
   const el=e.target.closest('button');if(!el||el.disabled)return;
+  if(el.dataset.particleGuide!==undefined){openParticleGuide(el.dataset.particleGuide);return;}
   if(el.dataset.goto!==undefined){setIndex(Number(el.dataset.goto));return;}
   if(el.dataset.toggle){state[el.dataset.toggle]=!state[el.dataset.toggle];save();render();return;}
   if(el.dataset.tab){if(el.dataset.tab==='quiz')stop();tab=el.dataset.tab;selected=-1;render();if(tab==='quiz')window.scrollTo(0,0);return;}

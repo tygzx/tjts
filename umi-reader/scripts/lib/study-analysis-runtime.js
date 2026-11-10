@@ -4,6 +4,20 @@
  const DATA=null; // @data
  const original=window.STUDY_GROUPS;
  const reviewed=new Map(DATA.sentences.map(s=>[s.jp,s]));
+ const handbook=new Map((DATA.particleHandbook||[]).map(x=>[x.key,x]));
+ const aliases={けど:'けれど',けれども:'けれど',なんて:'なんか',など:'なんか',ぐらい:'くらい',ねえ:'ね',ねぇ:'ね',なあ:'な',なぁ:'な',ぞ:'よ',ぜ:'よ',って:'という'};
+ function particleKeys(g,details){
+  const keys=new Set(details.flatMap(a=>a.particleKeys||[]));
+  for(const w of g.parts||g.words){
+   // Consult actual function words, never substrings of lexical words (その, かなり...).
+   if(w.p!=='助词'&&!(w.p==='语气词'&&w.s==='と'))continue;
+   let key=aliases[w.s]||w.s;
+   if(w.s==='で'&&g.p==='动词')key='て';
+   if(handbook.has(key))keys.add(key);
+  }
+  if(handbook.has(g.s)&&(g.p==='助词'||g.s==='こと'))keys.add(g.s);
+  return [...keys];
+ }
  const step=(form,why)=>({form,why});
  function feeling(groups){
   const out=[];
@@ -79,6 +93,7 @@
    const details=(entry?.items||[]).filter(a=>a.start<offset&&a.end>start).map(a=>({...a,kind:'本句逐项讲解'}));
    const own=feelingAnalysis(g)||regular(g);
    g.analyses=details.length?details:own?[{...own,start,end:offset}]:[];
+   g.particleKeys=particleKeys(g,details);
   }
   return groups;
  }
@@ -87,5 +102,23 @@
   for(const g of groups)for(const a of g.analyses||[]){const key=a.start+':'+a.end+':'+a.base;if(!seen.has(key)){seen.add(key);items.push(a);}}
   return {guide:reviewed.get(line.t.map(id=>book.words[id].s).join(''))?.guide||'',items:items.sort((a,b)=>a.start-b.start)};
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses});
+ function grammarHints(book,line,patterns,groups=create(book,line)){
+  const source=line.t.map(i=>book.words[i].s).join(''),explained=reviewed.get(source)?.items||[];
+  let offset=0;const tokens=line.t.map(i=>{const w=book.words[i],start=offset;offset+=w.s.length;return {...w,start,end:offset};});
+  function valid(m,title){
+   const a=m.index,z=a+m[0].length,first=tokens.find(t=>t.start===a);
+   if(explained.some(x=>a>=x.start&&z<=x.end))return false;
+   if(title==='〜って（口语）')return !!first&&first.s==='って'&&['助词','语气词'].includes(first.p);
+   if(title==='のだ／んだ')return !!first&&['の','ん'].includes(first.s)&&['名词','助词'].includes(first.p);
+   if(title==='〜れる／〜られる（形式候选）')return tokens.some(t=>t.start<=a&&t.end>=z&&t.p==='助动词'&&['れる','られる'].includes(t.b));
+   if(title==='使役形式（候选）')return tokens.some(t=>t.start<=a&&t.end>=z&&t.p==='助动词'&&['せる','させる'].includes(t.b));
+   return true;
+  }
+  return patterns.flatMap(([pattern,title,body])=>{
+   // Check every occurrence: an early lexical false match must not hide a later real particle.
+   const m=[...source.matchAll(new RegExp(pattern,'g'))].find(m=>valid(m,title));
+   return m?[{at:m.index,quote:m[0],title,body}]:[];
+  }).sort((a,b)=>a.at-b.at);
+ }
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();

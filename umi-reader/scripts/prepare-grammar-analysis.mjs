@@ -3,9 +3,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import {fileURLToPath} from 'node:url';
+import {chapterGuides} from './content/chapter-one-syntax.mjs';
+import {particleContexts} from './content/particle-context.mjs';
+import {particleHandbook,particlePrinciples} from './content/particle-handbook.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),c={window:{}};
 vm.runInNewContext(fs.readFileSync(path.join(root,'dist/book.js'),'utf8'),c);
 const book=c.window.BOOK,entries=new Map();
+// Clause guides are hand-written against this independently stored Japanese baseline.
+// Do not silently reattach a guide to a different line if extraction/order changes.
+const baseline=JSON.parse(fs.readFileSync(path.join(root,'data/translation-review.json'),'utf8'));
+for(let n=1;n<=173;n++){
+ const expected=baseline.entries.find(e=>e.sentence===n)?.jp;
+ if(!expected||book.lines[n-1].t.map(id=>book.words[id].s).join('')!==expected)throw new Error('Opening source changed; review the clause guide before rebuilding: '+n);
+}
 function add(n,quote,base,steps,meaning,warning=''){
  const jp=book.lines[n-1].t.map(id=>book.words[id].s).join(''),start=jp.indexOf(quote);
  if(start<0||jp.indexOf(quote,start+1)>=0)throw new Error('Missing/ambiguous quote '+n+' '+quote);
@@ -118,6 +128,22 @@ add(165,'なんの連絡もない','何の連絡もない',[
 add(167,'連絡がないのは','連絡がない ＋ の ＋ は',[
  ['連絡がない','没有联系。'],['連絡がないの','の把“没有联系”整件事名词化。'],['連絡がないのは','は把这件事提出来；后面用からだ解释原因。']
 ],'之所以没有联系，是因为……。');
-const data={version:1,method:'按原句语境逐项编写；仅覆盖列出的表达，其他常见动词形式由保守的词形规则展开。',references:[{title:'东京外国语大学：副助词',url:'https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/095.html'},{title:'东京外国语大学：助词',url:'https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/052.html'}],sentences:[...entries.values()]};
+const handbookKeys=new Set(particleHandbook.map(x=>x.key));
+for(const [n,quote,keys,base,relation,reason,contrast,meaning] of particleContexts){
+ if(keys.some(k=>!handbookKeys.has(k)))throw new Error('Missing particle guide '+n);
+ const existing=entries.get(n)?.items.find(x=>x.quote===quote);
+ if(!existing)add(n,quote,base,[['连接关系',relation],['本句为什么这样用',reason],['换一种说法比较（教学改写）',contrast]],meaning);
+ const item=entries.get(n).items.find(x=>x.quote===quote);
+ item.particleKeys=keys;
+ // Keep earlier conjugation steps when enriching an already explained form.
+ if(existing)item.particleDetails={relation,reason,contrast};
+ item.contextual=true;
+}
+for(const [n,guide] of chapterGuides){
+ if(!entries.has(n))entries.set(n,{sentence:n,jp:book.lines[n-1].t.map(id=>book.words[id].s).join(''),items:[]});
+ entries.get(n).guide=guide;
+}
+if(chapterGuides.length!==173||new Set(chapterGuides.map(x=>x[0])).size!==173)throw new Error('Opening guide coverage is incomplete');
+const data={version:2,method:'开篇 1—173 学习单位逐项编写主干导读；重点助词另有语境分析。全书可查的助词用法对照不代表每处语境已经判定。常见动词形式由保守的词形规则展开。',references:[{title:'东京外国语大学：副助词',url:'https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/095.html'},{title:'东京外国语大学：助词',url:'https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/052.html'},{title:'东京外国语大学：格助词',url:'https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/053.html'},{title:'东京外国语大学：接续助词',url:'https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/094.html'},{title:'东京外国语大学：终助词',url:'https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/096.html'}],particleHandbook,particlePrinciples,sentences:[...entries.values()].sort((a,b)=>a.sentence-b.sentence)};
 fs.writeFileSync(path.join(root,'data/grammar-analysis.json'),JSON.stringify(data,null,2)+'\n');
 console.log('Prepared',data.sentences.length,'sentences,',data.sentences.reduce((n,e)=>n+e.items.length,0),'explanations');
