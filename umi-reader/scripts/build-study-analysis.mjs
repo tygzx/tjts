@@ -4,11 +4,14 @@ import vm from 'node:vm';
 import {fileURLToPath} from 'node:url';
 import {buildWalkthroughs} from './lib/build-walkthroughs.mjs';
 import {buildParticleCombinations} from './lib/build-particle-combinations.mjs';
+import {buildGrammarLessons} from './lib/build-grammar-lessons.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const data=JSON.parse(fs.readFileSync(path.join(root,'data/grammar-analysis.json'),'utf8')),c={window:{}};
 vm.runInNewContext(fs.readFileSync(path.join(root,'dist/book.js'),'utf8'),c);
 data.walkthroughs=buildWalkthroughs(c.window.BOOK);
 data.particleCombinations=buildParticleCombinations(c.window.BOOK);
+vm.runInNewContext(fs.readFileSync(path.join(root,'dist/grammar.js'),'utf8'),c);
+data.grammarTeaching=buildGrammarLessons(c.window.GRAMMAR,c.window.CURATED);
 for(const e of data.sentences){
  const line=c.window.BOOK.lines[e.sentence-1],source=line.t.map(id=>c.window.BOOK.words[id].s).join('');
  if(source!==e.jp)throw new Error('Grammar source changed: '+e.sentence);

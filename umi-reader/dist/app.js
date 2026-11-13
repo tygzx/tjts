@@ -131,12 +131,24 @@
   return particleAudioHTML()+'<section class="particle-study"><div class="grammar-heading"><h3>助词怎么连接句子</h3><button class="outline" data-particle-guide="">打开完整助词指南</button></div><p class="hint">点下面的词可查连接方式、易混用法和对比例句。相同助词在不同句子里可能有不同作用，不能直接套用第一条意思。</p>'+particleLinksHTML(keys,'本句涉及的用法')+'</section>';
  }
 
+
+ function grammarLessonHTML(g){
+  return '<section class="grammar-lesson" data-grammar-lesson="'+esc(g.key)+'"><h4>语法讲解 · '+esc(g.title)+'</h4><dl><dt>怎么接、怎么变</dt><dd>'+esc(g.connection)+'</dd><dt>这个形式在表达什么</dt><dd>'+esc(g.role)+'</dd><dt>换一个形式，意思怎么变</dt><dd>'+esc(g.contrast)+'</dd></dl><div class="grammar-teaching-examples"><strong>对比例句 · 教学例句</strong>'+g.examples.map(e=>'<p lang="ja">'+esc(e.ja)+'</p><p>'+esc(e.zh)+'</p>').join('')+'</div>'+(g.caution?'<p class="grammar-pitfall"><strong>容易误解的地方：</strong>'+esc(g.caution)+'</p>':'')+'</section>';
+ }
+ function grammarGlossaryHTML(){
+  const terms=window.STUDY_GROUPS.grammarGlossary?.()||[];
+  return '<details class="grammar-glossary"><summary>零基础术语：原形、五段、连用形是什么意思</summary><dl>'+terms.map(([name,meaning])=>'<dt>'+esc(name)+'</dt><dd>'+esc(meaning)+'</dd>').join('')+'</dl></details>';
+ }
+ function formTableHTML(a){
+  return a.formTable?.length?'<details class="grammar-form-table"><summary>对照「'+esc(a.base)+'」的其他形式</summary><div class="form-table-scroll"><table><caption>同一个动词，不同词尾负责不同意思</caption><thead><tr><th>名称</th><th>实际写法</th><th>作用</th></tr></thead><tbody>'+a.formTable.map(x=>'<tr><th>'+esc(x.label)+'</th><td lang="ja">'+esc(x.form)+'</td><td>'+esc(x.meaning)+'</td></tr>').join('')+'</tbody></table></div></details>':'';
+ }
  function analysisHTML(a,open=false){
-  return `<details class="form-analysis" ${open?'open':''}><summary><span lang="ja">${esc(a.quote)}</span><small>${esc(a.kind)} · 为什么这样写</small></summary><p class="analysis-base">基本形式／结构：<b lang="ja">${esc(a.base)}</b></p><ol>${a.steps.map(s=>`<li><b lang="ja">${esc(s.form)}</b><p>${esc(s.why)}</p></li>`).join('')}</ol>${a.particleDetails?`<dl class="particle-detail"><dt>连接谁与谁</dt><dd>${esc(a.particleDetails.relation)}</dd><dt>为什么用这里的助词</dt><dd>${esc(a.particleDetails.reason)}</dd><dt>换一种说法比较（教学改写）</dt><dd>${esc(a.particleDetails.contrast)}</dd></dl>`:''}${particleLinksHTML(a.particleKeys)}<p class="analysis-meaning"><b>本句理解：</b>${esc(a.meaning)}</p>${a.warning?`<p class="analysis-caution">${esc(a.warning)}</p>`:''}</details>`;
+  const isContext=a.kind==='本句逐项讲解',ctx=a.contextLesson;
+  return '<details class="form-analysis" '+(open?'open':'')+'><summary><span lang="ja">'+esc(a.quote)+'</span><small>'+esc(a.kind)+' · 变形与语法讲解</small></summary><p class="analysis-base">基本形式／结构：<b lang="ja">'+esc(a.base)+'</b></p>'+(a.verbClass?'<div class="grammar-verb-class"><strong>先认类别：'+esc(a.verbClass.name)+'</strong><p>'+esc(a.verbClass.rule)+'</p></div>':'')+'<h4>'+(isContext?'本句语法关系':'一步一步怎么变')+'</h4><ol>'+a.steps.map(s=>'<li><b lang="ja">'+esc(s.form)+'</b><p>'+esc(s.why)+'</p></li>').join('')+'</ol>'+(a.particleDetails?'<dl class="particle-detail"><dt>连接谁与谁</dt><dd>'+esc(a.particleDetails.relation)+'</dd><dt>为什么用这里的助词</dt><dd>'+esc(a.particleDetails.reason)+'</dd><dt>换一种说法比较（教学改写）</dt><dd>'+esc(a.particleDetails.contrast)+'</dd></dl>':'')+particleLinksHTML(a.particleKeys)+(a.grammarLessons||[]).map(grammarLessonHTML).join('')+(ctx?'<section class="grammar-in-context"><h4>放回本句 · 已有逐句讲解</h4><p lang="ja">'+esc(ctx.quote)+'</p><p>'+esc(ctx.meaning)+'</p><p><strong>这段为什么这样写：</strong>'+esc(ctx.why)+'</p></section>':'')+'<p class="analysis-meaning"><b>'+esc(a.meaningLabel||(isContext?'本句理解':'表达意思'))+'：</b>'+esc(a.meaning)+'</p>'+formTableHTML(a)+grammarGlossaryHTML()+(a.warning?'<p class="analysis-caution">'+esc(a.warning)+'</p>':'')+'</details>';
  }
  function syntaxHTML(){
   const a=window.STUDY_GROUPS.analyses?.(B,B.lines[state.index],groups);if(!a||(!a.items.length&&!a.guide))return '';
-  return `<section class="sentence-analysis"><h3>从基本形式读懂本句</h3><p class="hint">先看整句主干，再看每个表达连接了谁、为何用这个助词，以及换一种说法有什么区别。标为“常见活用拆解”的条目只解释词形；本轮主干导读覆盖开篇第 1—173 句，其他句子仍需逐句补充。新增详细讲解目前为文字。</p>${a.guide?`<div class="sentence-guide"><strong>整句怎么连起来</strong><p>${esc(a.guide)}</p></div>`:''}${a.items.map(x=>analysisHTML(x,x.kind==='本句逐项讲解')).join('')}</section>`;
+  return `<section class="sentence-analysis"><h3>从基本形式读懂本句</h3><p class="hint">先看整句主干，再看每个表达连接了谁、为何用这个助词，以及换一种说法有什么区别。展开每个条目可看逐步变形、接续方式、语法作用和对比例句；术语不懂可打开零基础说明。通用规则与“放回本句”的解释分开标注；开篇第 1—173 句已有主干导读，其他句子的具体语境仍需逐句补充。新增详细讲解目前为文字。</p>${a.guide?`<div class="sentence-guide"><strong>整句怎么连起来</strong><p>${esc(a.guide)}</p></div>`:''}${a.items.map(x=>analysisHTML(x,x.kind==='本句逐项讲解')).join('')}</section>`;
  }
  function wordsHTML(){
   const meaningful=groups.filter(g=>g.p!=='标点');
@@ -161,7 +173,7 @@
  }
  function grammarHTML(){
   const gs=grammarFor(),cur=CURATED[state.index];
-  return `${combinationStudyHTML()}${syntaxHTML()}${particleStudyHTML()}${cur?.note?`<div class="beginner-note"><strong>这一句怎么读</strong>${esc(cur.note)}</div>`:''}<p class="hint">${cur?.g?'本句讲解':'按出现位置排列的句型提示；自动匹配，请结合词语和上下文判断。'}${textOnly?'':' · 下方“听讲解”播放原有句型简述，未包含上方新增的详细分析。'}</p><div class="grammar-list">${gs.map((g,i)=>`<article class="grammar-item"><span class="word-number">${String(i+1).padStart(2,'0')}</span><div><div class="grammar-heading"><h3>${esc(g.title)}</h3>${lessonButton('grammar',g.title,grammarAudioFor(g.title))}</div><p>${esc(g.body)}</p><span class="grammar-quote" lang="ja">${esc(g.quote)}</span></div></article>`).join('')}</div>${!gs.length?'<p class="empty-note">本行没有匹配到额外句型。先沿着词语顺序阅读，留意下面的助词以及动词词尾。</p>':''}${B.lines[state.index].notes.length?`<p class="hint">原文编辑注：${esc(B.lines[state.index].notes.join('；'))}</p>`:''}`;
+  return `${combinationStudyHTML()}${syntaxHTML()}${particleStudyHTML()}${cur?.note?`<div class="beginner-note"><strong>这一句怎么读</strong>${esc(cur.note)}</div>`:''}<p class="hint">${cur?.g?'本句讲解':'按出现位置排列的句型提示；自动匹配，请结合词语和上下文判断。'}${textOnly?'':' · 下方“听讲解”播放原有句型简述，未包含上方新增的详细分析。'}</p><div class="grammar-list">${gs.map((g,i)=>`<article class="grammar-item"><span class="word-number">${String(i+1).padStart(2,'0')}</span><div><div class="grammar-heading"><h3>${esc(g.title)}</h3>${lessonButton('grammar',g.title,grammarAudioFor(g.title))}</div><p>${esc(g.body)}</p><span class="grammar-quote" lang="ja">${esc(g.quote)}</span>${(window.STUDY_GROUPS.grammarTeaching?.(g.title)||[]).map(grammarLessonHTML).join('')}${grammarGlossaryHTML()}</div></article>`).join('')}</div>${!gs.length?'<p class="empty-note">本行没有匹配到额外句型。先沿着词语顺序阅读，留意下面的助词以及动词词尾。</p>':''}${B.lines[state.index].notes.length?`<p class="hint">原文编辑注：${esc(B.lines[state.index].notes.join('；'))}</p>`:''}`;
  }
  function contextHTML(){
   const page=contextPage??Math.floor(state.index/12),start=page*12;

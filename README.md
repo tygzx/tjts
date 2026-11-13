@@ -133,3 +133,13 @@ WanaKana 与分词词典相关声明见 `umi-reader/dist/third-party-licenses.tx
 当前原文共识别 867 处组合；59 条按原文编写的语境笔记对应 60 处出现，连续开篇 1—173 中识别出的组合均有语境说明，另含第 181 句。其他位置明确标为通用组合对照，不宣称全书逐处判定。教学分组不修改小说原字、原词对象或读音；新组合不作为自动词义评分依据，仍保留点击测验。新增详细解释目前为文字。
 
 维护源：`scripts/content/particle-combinations.mjs`，构建入口 `scripts/build-study-analysis.mjs`（本仓库前加 `umi-reader/`）。运行 `npm run check:combinations` 检查全书字序、原词和读音保持、组合多义、词语边界、语境范围、浮窗／拆句交互与测验答案隔离。通用叠加原则参考[东京外国语大学副助词说明](https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/095.html)；小说里的解释为依本句另写的学习说明。
+
+## 零基础变形与语法讲解（2026-11-13）
+
+常见活用卡片现在分开讲解词类、逐步变形、接续、语法作用、相近形式区别及自拟对比例句。比如する→し→した、読む→読ん→読んで→読んでいる→読んでいた；不是只列原形和词义。可展开同一个动词的 8 种形式对照，以及 13 个零基础术语解释。形容词与判断词使用独立规则，不套用动词接法。
+
+73 项语法说明覆盖现有全部 62 类句型提示，并用于全书严格核对词形的活用卡。当前 5,081 条非人工语境分析附有通用语法讲解（4,114 条常见动词活用（含 161 条词元确认的被动／使役等单层语态加状态变化）、589 条判断表达、345 条形容词变化、33 条固定感觉表达）；其中 320 条还能链接到已有逐句阅读块。原有 100 条本句逐项分析继续保留。本句解释和通用规则分别标识，词典释义不再冒充“本句理解”。这些数字不代表全书每个复杂句、方言或多层助动词都已逐句校订。遇到不支持的复杂词形，不生成猜测的变形链；特殊敬语动词不套普通五段的完整对照表。
+
+内容源：`scripts/content/grammar-lessons.mjs`；构建：`scripts/build-study-analysis.mjs`；检查：`npm run check:grammar-teaching`（仓库内脚本路径前加`umi-reader/`）。检查覆盖词形链、音变、たら与过去的区别、形容词和判断表达、全书原文和原词对象保持、所有句型的讲解完整性、词语浮窗／列表／语法页、术语和变形对照展开，以及测验答案隔离。新增长讲解为文字，原“听讲解”仍播放已有简述，未重制音频或 APK。
+
+基础活用、状态、条件部分核对参考：[东京外国语大学普通形说明](https://www.coelang.tufs.ac.jp/mt/ja/gmod/courses/c02/lesson21/step1/explanation/038.html)、[ている的状态用法](https://www.coelang.tufs.ac.jp/mt/ja/gmod/courses/c02/lesson24/step1/explanation/045.html)、[条件表达](https://www.coelang.tufs.ac.jp/mt/ja/gmod/courses/c02/lesson42/step1/explanation/083.html)。例句和中文讲解为本项目另写。

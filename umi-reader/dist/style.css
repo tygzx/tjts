@@ -154,3 +154,26 @@
 .combination-examples{border-top:1px solid var(--line);margin-top:16px}.combination-examples summary{font-size:14px}.combination-examples p{line-height:1.8}.combination-examples [lang=ja]{color:#194e64;font-size:16px}
 .word-extra>.combination-lesson{margin:0}.combination-study{margin-bottom:20px}
 @media(max-width:600px){.combination-parts{grid-template-columns:1fr;gap:4px}.combination-parts dd{margin-bottom:8px}.combination-context [lang=ja],.combination-form{font-size:17px}}
+
+/* Detailed grammar teaching: same content in word list, popup and grammar panel. */
+.form-analysis h4{font-size:14px;color:var(--ink);margin:20px 0 12px}
+.grammar-verb-class,.grammar-in-context{padding:14px 16px;border-radius:10px;background:#edf5f7;margin:14px 0;line-height:1.85}
+.grammar-verb-class p,.grammar-in-context p{margin:8px 0}
+.grammar-lesson{margin:20px 0;padding:4px 0 8px;border-top:1px solid var(--line);font-size:14px;line-height:1.9;overflow-wrap:anywhere}
+.grammar-lesson dl,.grammar-glossary dl{margin:0}
+.grammar-lesson dt,.grammar-glossary dt{font-weight:650;color:var(--ink);margin-top:15px}
+.grammar-lesson dd,.grammar-glossary dd{margin:5px 0 13px}
+.grammar-teaching-examples{padding:14px 16px;background:#f5f8fa;border-radius:9px;margin:16px 0}
+.grammar-teaching-examples p{margin:6px 0}
+.grammar-teaching-examples p[lang=ja]{font-size:18px;color:var(--ink);margin-top:14px}
+.grammar-teaching-examples p[lang=ja]+p{font-size:13px;color:var(--muted)}
+.grammar-pitfall{border-left:3px solid #c3a78b;padding-left:12px}
+.grammar-glossary,.grammar-form-table{margin:15px 0;border:1px solid var(--line);border-radius:9px;padding:12px 14px;line-height:1.8}
+.grammar-glossary summary,.grammar-form-table summary{cursor:pointer;color:var(--accent);font-size:13px}
+.grammar-glossary[open] summary,.grammar-form-table[open] summary{margin-bottom:14px}
+.form-table-scroll{overflow:auto}
+.grammar-form-table table{border-collapse:collapse;width:100%;font-size:13px;text-align:left}
+.grammar-form-table caption{text-align:left;color:var(--muted);padding:8px 0}
+.grammar-form-table th,.grammar-form-table td{border-bottom:1px solid var(--line);padding:9px 8px;vertical-align:top}
+.grammar-form-table td[lang=ja]{font-size:17px;white-space:nowrap}
+@media(max-width:640px){.grammar-lesson{font-size:14px}.grammar-form-table{padding:10px}.grammar-form-table th,.grammar-form-table td{padding:8px 5px}.grammar-glossary{padding:10px 12px}}
