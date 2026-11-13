@@ -8,7 +8,8 @@ import {buildWalkthroughs} from './lib/build-walkthroughs.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),read=f=>fs.readFileSync(path.join(root,'dist',f),'utf8'),c={window:{}};
 for(const f of ['book.js','study-morphology.js','study-expressions.js','study-groups.js'])vm.runInNewContext(read(f),c);
 const b=c.window.BOOK,s=c.window.STUDY_GROUPS,original=JSON.stringify(b),lessons=buildWalkthroughs(b);
-assert.equal(lessons.length,41);
+assert.equal(lessons.length,174);
+for(let n=1;n<=173;n++)assert(s.walkthrough(b,b.lines[n-1]),'Opening walkthrough missing: '+n);
 for(const lesson of lessons){
  const l=s.walkthrough(b,b.lines[lesson.sentence-1]);assert(l,lesson.sentence);
  let end=0;for(const block of l.blocks){assert.equal(l.jp.slice(block.start,block.end),block.quote);assert(block.start>=end);assert(/^[\p{P}\p{Z}\s]*$/u.test(l.jp.slice(end,block.start)));end=block.end;}
@@ -32,7 +33,11 @@ d.querySelector('[data-tab="words"]').click();assert.equal(d.querySelectorAll('.
 d.querySelector('[data-tab="walk"]').click();d.querySelector('#next').click();assert.match(d.querySelector('.walk-spine').textContent,/第24句/);assert.equal(d.querySelector('.walk-chunk[aria-pressed="true"]').dataset.walkStep,'0');
 d.querySelector('.walk-links [data-goto="22"]').click();assert.match(d.querySelector('.walk-spine').textContent,/孩子就是靠/);
 const jump=n=>{d.querySelector('#jump-number').value=String(n);d.querySelector('#jump').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));};
-jump(34);assert.match(d.querySelector('.walkthrough').textContent,/逐块点击讲解尚未补齐/);assert.equal(d.querySelectorAll('.walk-chunk').length,0);
+jump(34);assert.match(d.querySelector('.walk-spine').textContent,/母亲/);assert.equal(d.querySelectorAll('.walk-chunk').length,3);assert(d.querySelector('.walk-links [data-goto="32"]'));
+jump(41);assert.match(d.querySelector('.walk-pitfall').textContent,/预期落空/);
+jump(114);assert.match(d.querySelector('.walk-pitfall').textContent,/多少想过/);
+jump(135);assert.match(d.querySelector('.walk-pitfall').textContent,/被安排/);
+jump(143);assert.match(d.querySelector('.walk-pitfall').textContent,/并不表示已拨出/);
 jump(174);assert.match(d.querySelector('.walkthrough').textContent,/还没有逐块讲解/);
 jump(145);assert.match(d.querySelector('.walk-pitfall').textContent,/不是转折/);
 d.querySelector('[data-tab="quiz"]').click();assert(d.querySelector('.main.quiz-mode'));assert.equal(d.querySelectorAll('.walkthrough').length,0,'No walkthrough answer leakage into quiz');

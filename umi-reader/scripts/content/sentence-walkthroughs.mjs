@@ -1,5 +1,8 @@
 // Each block is an exact, ordered source span. Square brackets in explanations
 // are teaching scaffolds, never additions to the Japanese novel.
+import {openingWalkthroughsA} from './walkthroughs-034-080.mjs';
+import {openingWalkthroughsB} from './walkthroughs-081-125.mjs';
+import {openingWalkthroughsC} from './walkthroughs-127-172.mjs';
 const lessons=[];
 const add=(sentence,spine,who,pitfall,blocks,links=[])=>lessons.push({sentence,spine,who,pitfall,blocks:blocks.map(([quote,role,meaning,why])=>({quote,role,meaning,why})),links});
 add(1,'我觉得：虽然有过各种问题，一切终究还是会回到里伽子身上。','“我觉得”的我，是叙述者拓；“回到”的主语是“一切”。','不要把所有词都并排翻译。末尾と思う管的是前面整个想法。',[
@@ -87,4 +90,4 @@ add(173,'那时我第一次意识到自己非常喜欢她，心里随之涌起�
  ['ぼくはそのとき初めて','谁，什么时候','我在那时才第一次','初めて主要落在后面的意识到，而非断言此刻才开始喜欢。'],['里伽子をすごく好きだった','意识到的事情','自己非常喜欢里伽子','原文对象用を；这里不擅改成が。'],['ことに気がついて','对这件事有何认识','意识到了这件事，然后','こと收拢喜欢这一事实，に接気がつく，て连接心情变化。'],['とりかえしのつかないような哀しい気持ちに','变成怎样的心情','仿佛无法挽回的悲伤心情','ような前的内容修饰気持ち；最后に接变化结果。'],['なった','发生的变化','变得这样','主干后半是“我变得悲伤”，并非心情自己意识到了喜欢。']]);
 add(181,'这是一所主打初高中六年一贯教育的私立名校，被社会上称为县内最好的升学学校。','被评价的是前文提到的学校；评价来自社会上的人们。','最后「と…いわれていた」包住前面的学校评价，是被称作、被认为，不是说学校自己在说话。',[
  ['中・高の六年間一貫教育がウリの','先说学校的卖点','以初高中六年一贯教育为特色的','［一貫教育がウリ］这个判断通过の接到学校，整块是修饰。中・高在此指初中、高中。'],['私立の名門校で','它是什么学校','一所私立名校，并且','で把名校判断连接到下一个评价，不是活动地点。'],['県下一の進学校','再给一个评价','全县首屈一指的升学名校','一是第一、首屈一指，不是只有一所。'],['と世間ではいわれていた','评价从何而来','在社会上被这样称道','と收住前面的整段评价；いわれていた对应いう的被动与过去持续状态。']]);
-export const sentenceWalkthroughs=lessons;
+export const sentenceWalkthroughs=[...lessons,...openingWalkthroughsA,...openingWalkthroughsB,...openingWalkthroughsC].sort((a,b)=>a.sentence-b.sentence);
