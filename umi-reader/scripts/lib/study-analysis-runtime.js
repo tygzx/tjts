@@ -6,6 +6,39 @@
  const reviewed=new Map(DATA.sentences.map(s=>[s.jp,s]));
  const walkthroughs=new Map((DATA.walkthroughs||[]).map(s=>[s.jp,s]));
  function walkthrough(book,line){return walkthroughs.get(line.t.map(i=>book.words[i].s).join(''))||null;}
+ const combinations=new Map((DATA.particleCombinations?.guides||[]).map(x=>[x.key,x]));
+ const combinationContexts=new Map();
+ for(const x of DATA.particleCombinations?.contexts||[]){if(!combinationContexts.has(x.jp))combinationContexts.set(x.jp,[]);combinationContexts.get(x.jp).push(x);}
+ function combineParticles(groups,source){
+  const out=[],contexts=combinationContexts.get(source)||[],lesson=walkthroughs.get(source);let offset=0;
+  const eligible=g=>(g.parts||g.words).every(w=>w.p==='助词'||w.p==='语气词'&&w.s==='と'||w.p==='名词'&&w.s==='の'||w.p==='助动词'&&w.s==='で');
+  for(let i=0;i<groups.length;i++){
+   let surface='',found=null;
+   for(let j=i;j<Math.min(groups.length,i+3);j++){
+    if(!eligible(groups[j]))break;
+    surface+=groups[j].s;if(surface.length>4)break;
+    const entry=combinations.get(surface);
+    // A single とも (両親とも, both parents) is not と + も.
+    if(entry&&!(surface==='とも'&&j===i))found={entry,end:j,surface};
+   }
+   if(!found){out.push(groups[i]);offset+=groups[i].s.length;continue;}
+   const chunk=groups.slice(i,found.end+1),end=offset+found.surface.length;
+   const context=contexts.find(x=>x.key===found.surface&&x.start<=offset&&x.end>=end)||null;
+   const block=lesson?.blocks.find(x=>x.start<=offset&&x.end>=end);
+   const parts=chunk.flatMap(g=>g.parts||g.words);
+   // The interlinear gloss describes only this combination, never the whole clause.
+   let gloss=found.entry.short,localGloss=false;
+   if(context&&found.surface==='でも'){
+    gloss=context.sense.includes('举例')?'……之类（随口举例）':context.sense.includes('让步')?'即使是……也……':context.sense.includes('否定')?'也并非……（与后面的否定连读）':'连……也……';localGloss=true;
+   }
+   if(context&&found.surface==='のに'){
+    gloss=context.sense.includes('察觉')?'把前面的事实接作察觉内容':context.sense.includes('用途')?'在……方面；用于……':'明明……却……';localGloss=true;
+   }
+   out.push({s:found.surface,k:chunk.map(g=>g.k).join(''),p:'组合表达',words:chunk.flatMap(g=>g.words),parts,audioParts:chunk.flatMap(g=>g.audioParts||[]),base:found.surface,rule:'particle-combination',definition:gloss,definitionReviewed:true,definitionScope:localGloss?'context':'general',combination:{...found.entry,start:offset,end,context,nearby:!context&&block?{quote:block.quote,meaning:block.meaning,why:block.why}:null}});
+   offset=end;i=found.end;
+  }
+  return out;
+ }
  const handbook=new Map((DATA.particleHandbook||[]).map(x=>[x.key,x]));
  const aliases={けど:'けれど',けれども:'けれど',なんて:'なんか',など:'なんか',ぐらい:'くらい',ねえ:'ね',ねぇ:'ね',なあ:'な',なぁ:'な',ぞ:'よ',ぜ:'よ',って:'という'};
  function particleKeys(g,details){
@@ -88,7 +121,7 @@
   return {quote:g.s,base,steps:found.steps,meaning:original.describe(g).definition,kind:'常见活用拆解',warning:'此处依据词典类型和实际词形拆解；时态、动作状态和说话人的态度仍须连同整句判断。'};
  }
  function create(book,line){
-  const groups=feeling(original.create(book,line)),text=line.t.map(id=>book.words[id].s).join(''),entry=reviewed.get(text);
+  const text=line.t.map(id=>book.words[id].s).join(''),groups=combineParticles(feeling(original.create(book,line)),text),entry=reviewed.get(text);
   let offset=0;
   for(const g of groups){
    const start=offset;offset+=g.s.length;
