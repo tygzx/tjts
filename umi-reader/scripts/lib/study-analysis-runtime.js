@@ -4,6 +4,8 @@
  const DATA=null; // @data
  const original=window.STUDY_GROUPS;
  const reviewed=new Map(DATA.sentences.map(s=>[s.jp,s]));
+ const walkthroughs=new Map((DATA.walkthroughs||[]).map(s=>[s.jp,s]));
+ function walkthrough(book,line){return walkthroughs.get(line.t.map(i=>book.words[i].s).join(''))||null;}
  const handbook=new Map((DATA.particleHandbook||[]).map(x=>[x.key,x]));
  const aliases={けど:'けれど',けれども:'けれど',なんて:'なんか',など:'なんか',ぐらい:'くらい',ねえ:'ね',ねぇ:'ね',なあ:'な',なぁ:'な',ぞ:'よ',ぜ:'よ',って:'という'};
  function particleKeys(g,details){
@@ -120,5 +122,5 @@
    return m?[{at:m.index,quote:m[0],title,body}]:[];
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();

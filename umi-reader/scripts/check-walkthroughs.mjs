@@ -1,0 +1,40 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+import {JSDOM} from 'jsdom';
+import {buildWalkthroughs} from './lib/build-walkthroughs.mjs';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),read=f=>fs.readFileSync(path.join(root,'dist',f),'utf8'),c={window:{}};
+for(const f of ['book.js','study-morphology.js','study-expressions.js','study-groups.js'])vm.runInNewContext(read(f),c);
+const b=c.window.BOOK,s=c.window.STUDY_GROUPS,original=JSON.stringify(b),lessons=buildWalkthroughs(b);
+assert.equal(lessons.length,41);
+for(const lesson of lessons){
+ const l=s.walkthrough(b,b.lines[lesson.sentence-1]);assert(l,lesson.sentence);
+ let end=0;for(const block of l.blocks){assert.equal(l.jp.slice(block.start,block.end),block.quote);assert(block.start>=end);assert(/^[\p{P}\p{Z}\s]*$/u.test(l.jp.slice(end,block.start)));end=block.end;}
+ assert(/^[\p{P}\p{Z}\s]*$/u.test(l.jp.slice(end)));assert(l.spine&&l.who&&l.pitfall);
+}
+assert.equal(s.walkthrough(b,b.lines[173]),null,'No fabricated walkthrough for unreviewed units');
+const broken=structuredClone(lessons[0]);broken.blocks.splice(1,1);assert.throws(()=>buildWalkthroughs(b,[broken]),/Uncovered/);
+const swapped=structuredClone(lessons[0]);swapped.blocks.reverse();assert.throws(()=>buildWalkthroughs(b,[swapped]),/Uncovered/);
+assert.equal(JSON.stringify(b),original);
+const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document;
+w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:20,illustrations:false}));
+for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',f)))w.eval(read(f));
+d.querySelector('[data-tab="walk"]').click();assert.match(d.querySelector('.walk-spine').textContent,/内层取钱的是母亲/);
+assert.equal(d.querySelectorAll('.walk-chunk').length,4);assert.equal(d.querySelectorAll('.walk-detail').length,1);
+assert(d.querySelector('.jp-token.walk-focus'));
+d.querySelector('.walk-chunk[data-walk-step="2"]').click();assert.match(d.querySelector('.walk-detail').textContent,/将整项动作当作对象/);assert.equal(d.querySelector('.walk-chunk[aria-pressed="true"]').dataset.walkStep,'2');
+assert.equal(d.activeElement.dataset.walkStep,'2','Keyboard focus remains on selected block');
+d.querySelector('[data-walk-all]').click();assert.equal(d.querySelectorAll('.walk-detail').length,4);
+d.querySelector('[data-tab="words"]').click();assert.equal(d.querySelectorAll('.walk-focus').length,0);assert(d.querySelector('.word-row'));
+d.querySelector('[data-tab="walk"]').click();d.querySelector('#next').click();assert.match(d.querySelector('.walk-spine').textContent,/第24句/);assert.equal(d.querySelector('.walk-chunk[aria-pressed="true"]').dataset.walkStep,'0');
+d.querySelector('.walk-links [data-goto="22"]').click();assert.match(d.querySelector('.walk-spine').textContent,/孩子就是靠/);
+const jump=n=>{d.querySelector('#jump-number').value=String(n);d.querySelector('#jump').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));};
+jump(34);assert.match(d.querySelector('.walkthrough').textContent,/逐块点击讲解尚未补齐/);assert.equal(d.querySelectorAll('.walk-chunk').length,0);
+jump(174);assert.match(d.querySelector('.walkthrough').textContent,/还没有逐块讲解/);
+jump(145);assert.match(d.querySelector('.walk-pitfall').textContent,/不是转折/);
+d.querySelector('[data-tab="quiz"]').click();assert(d.querySelector('.main.quiz-mode'));assert.equal(d.querySelectorAll('.walkthrough').length,0,'No walkthrough answer leakage into quiz');
+assert.equal(JSON.parse(w.localStorage.getItem('umi-progress-v1')).index,144);
+dom.window.close();console.log(JSON.stringify({walkthroughs:'passed',lessons:lessons.length,blocks:lessons.reduce((n,l)=>n+l.blocks.length,0),sourceCoverage:true,staleSourceProtection:true,interaction:true,fallback:true,quizIsolation:true}));
