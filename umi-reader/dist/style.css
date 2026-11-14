@@ -177,3 +177,13 @@
 .grammar-form-table th,.grammar-form-table td{border-bottom:1px solid var(--line);padding:9px 8px;vertical-align:top}
 .grammar-form-table td[lang=ja]{font-size:17px;white-space:nowrap}
 @media(max-width:640px){.grammar-lesson{font-size:14px}.grammar-form-table{padding:10px}.grammar-form-table th,.grammar-form-table td{padding:8px 5px}.grammar-glossary{padding:10px 12px}}
+
+/* Pronunciation beside the lemma; examples before taxonomy. */
+.form-pronunciation{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 6px 12px;font-weight:400;font-size:14px;color:var(--ink)}
+.form-pronunciation small{color:var(--muted);font-size:12px}.form-reading-play{font-size:12px;padding:6px 10px}
+.form-reading-play[aria-pressed=true]{background:#dcebf1}.form-analysis li .form-pronunciation{display:flex;margin:4px 0}
+.godan-examples{margin-top:14px}.godan-examples summary{cursor:pointer;font-size:14px}.godan-examples table{width:100%;border-collapse:collapse;font-size:13px}
+.godan-examples th,.godan-examples td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:9px 6px}
+.godan-examples .form-pronunciation{display:flex;margin:3px 0;font-size:13px}.godan-examples .form-pronunciation small{display:block}
+.analysis-base{padding:12px 0;border-bottom:1px solid var(--line);line-height:1.9}.word-zoom-base .form-pronunciation{justify-content:center}
+@media(max-width:600px){.analysis-base>.form-pronunciation{display:flex;margin-left:0}.godan-examples table{font-size:12px}.godan-examples th,.godan-examples td{padding:8px 4px}}

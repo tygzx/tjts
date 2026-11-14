@@ -3,6 +3,30 @@
  'use strict';
  const DATA=null; // @data
  const original=window.STUDY_GROUPS;
+ const readingIndexes=new WeakMap();
+ function formReading(book,form,words=[]){
+  if(!form||!/^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]+$/u.test(form))return '';
+  if(!/\p{Script=Han}/u.test(form))return form;
+  const special={来る:'くる',来て:'きて',来た:'きた',来ない:'こない',来なかった:'こなかった',来ます:'きます',来よう:'こよう',来れば:'くれば',気がする:'きがする'};
+  if(special[form])return special[form];
+  // Restore a kana ending using the same token's reading, preserving homograph context.
+  const candidates=new Set();
+  for(const w of words){
+   if(w.s===form&&w.k)candidates.add(w.k);
+   if(!w.b||!w.k||!w.ct||!['动词','形容词','助动词'].includes(w.p))continue;
+   let n=0;while(n<Math.min(w.s.length,w.b.length)&&w.s[n]===w.b[n])n++;
+   const head=w.s.slice(0,n),tail=w.s.slice(n);
+   if(!head||!form.startsWith(head)||!/^[\p{Script=Hiragana}ー]*$/u.test(tail)||!w.k.endsWith(tail)||!/^[\p{Script=Hiragana}ー]*$/u.test(form.slice(n)))continue;
+   candidates.add((tail?w.k.slice(0,-tail.length):w.k)+form.slice(n));
+  }
+  if(candidates.size===1)return [...candidates][0];
+  if(candidates.size>1)return '';
+  if(!readingIndexes.has(book)){const map=new Map();for(const w of book.words){if(!w.k)continue;if(!map.has(w.s))map.set(w.s,new Set());map.get(w.s).add(w.k);}readingIndexes.set(book,map);}
+  const exact=readingIndexes.get(book).get(form);if(exact?.size===1)return [...exact][0];
+  // A compound する verb may have a separate, unchanged noun token.
+  if(form.endsWith('する')){const noun=form.slice(0,-2),parts=words.filter(w=>w.s===noun);if(parts.length&&parts.every(w=>w.k===parts[0].k))return parts[0].k+'する';}
+  return DATA.formReadings?.[form]||'';
+ }
  const reviewed=new Map(DATA.sentences.map(s=>[s.jp,s]));
  const walkthroughs=new Map((DATA.walkthroughs||[]).map(s=>[s.jp,s]));
  const grammarLessons=new Map((DATA.grammarTeaching?.lessons||[]).map(g=>[g.key,g]));
@@ -101,7 +125,9 @@
    if(ct.includes('促音便')&&end==='く'){te=stem+'って';past=stem+'った';how='「行く／いく」的て形、た形是例外：いって／いった，用促音っ。';}
    if(base==='ある')neg='ない';
   }else return null;
-  const verbClass=ct.includes('サ変')?{name:'不规则动词（サ变）',rule:'する及以する结尾的动词不能照普通的る结尾动词处理。する的连接形式分别有し、すれ、しよ等；前面的动作名称保留。'}:ct.includes('カ変')?{name:'不规则动词（カ变）',rule:'来る的词干读音会随词尾改变：くる、きて、きた、こない。写汉字来不代表读音不变。'}:ct==='一段'?{name:'一段动词',rule:'先去掉原形最后的る，再接て、た、ない等词尾。其他以る结束的词未必也是一段，类别应查词典确认。'}:{name:'五段动词',rule:'词尾按接法变换读音；接て／た还会发生音变。不能像一段动词那样统一删る。'};
+  const verbClass=ct.includes('サ変')?{name:'不规则动词（サ变）',rule:`“不规则”就是这个词需要单独记接法。眼前这个词是${base}，过去说${past}，连接后文说${te}。先记这两个完整写法即可。`}:ct.includes('カ変')?{name:'不规则动词（カ变）',rule:'来る读くる，来た读きた，来ない读こない。写的都是来，读音却会随用法变；这几个写法要一起记。'}:ct==='一段'?{name:'一段动词',rule:`这是一组常见的变形规则：拿${base}来说，先去掉最后的る，保留${stem}；加た得到${past}，加ない得到${neg}。先照这个具体词看，不必先背类别名称。`}:{name:'五段动词',rule:'“五段”是一类动词的变形规则名称：词尾会随用法，在あ(a)、い(i)、う(u)、え(e)、お(o)五组元音之间变化。不是五个单词，也不是五种时态。先看本次需要的完整写法，下面的五格对照可慢慢查。'};
+  if(ct.startsWith('五段'))verbClass.rows=[['あ段 a',neg,'否定：不……'],['い段 i',ren+'ます','用礼貌的方式说……'],['う段 u',base,'词典收录的原形'],['え段 e',cond,'如果……'],['お段 o',vol,'打算……／……吧；有时表推测']].map(([label,form,meaning])=>({label,form,meaning}));
+  if(ct.startsWith('五段'))verbClass.note=base.endsWith('う')?`这里的原形以う结尾。说“不……”时用わない：${base} → ${neg}；わ读wa，也归在a这一组。`:'上面按元音分五格。て形、た形还要用专门的词尾写法，不能仅靠这五格直接相加。';
   const negHow=base==='ある'?'ある的否定是例外，直接用ない，不说あらない。':ct.startsWith('五段')?`把词尾「${base.at(-1)}」换成「${neg.slice(stem.length,-2)}」，再加ない：${base} → ${neg}。`:`${base} → ${neg.slice(0,-2)} ＋ ない → ${neg}。${ct==='一段'?'先去掉る。':'这是不规则动词要单独记的接法。'}`;
   const renHow=`${base} → ${ren}。${ct.startsWith('五段')?'词尾换到い段。':ct==='一段'?'去掉最后的る。':'使用不规则的连接形式。'}「连用形」就是此处为接ます、たい等准备的形式，不是一个新的动作。`;
   const volHow=ct.startsWith('五段')?`词尾换到お段，再加う：${base} → ${vol}。`:ct==='一段'?`去る，再加よう：${base} → ${vol}。`:`此词的不规则意志形是${vol}。`;
@@ -109,9 +135,11 @@
   const condHow=ct.startsWith('五段')?`词尾换到え段，再加ば：${base} → ${cond}。`:ct==='一段'?`去る，再加れば：${base} → ${cond}。`:`此词的不规则条件形是${cond}。`;
   const candidates=[];
   const add=(surface,steps,key)=>candidates.push({surface,steps,lessonKeys:[key]});
-  const initial=step(base,`原形，也叫辞书形，是词典用来收录这个动词的形式。这是${verbClass.name}。`),teStep=step(te,`${te.slice(0,-1)} ＋ ${te.at(-1)} ＝ ${te}。て形将动作接到后面的成分，本身不等于“正在”或“过去”。`);
-  const connecting=step(te.slice(0,-1),ct==='一段'?`去掉最后的る，保留「${te.slice(0,-1)}」，准备接て或た。`:ct.includes('サ変')?`将する变成「し」，动作名称不变：${base} → ${te.slice(0,-1)}。不要把する直接写成すた。`:ct.includes('カ変')?'来る／くる在接て或た时使用き这一读音；这是不规则变化。':`接て／た时先得到「${te.slice(0,-1)}」这个连接形式。${how}${te.slice(0,-1)!==ren?'这里发生了为方便发音而产生的音便，不能用接ます的连用形直接加た。':'这个词的て／た连接形式与接ます的连用形相同。'}`);
-  const pastStep=step(past,`${past.slice(0,-1)} ＋ ${past.at(-1)} ＝ ${past}。得到た形；结尾为だ的形式也算た形。普通叙述中常表达过去或完成；若后接条件、建议等，应按整个句型读。`);
+  const initial=step(base,'这是查词典时用的完整写法，也叫“原形”。先认出这个词，再看为了表达不同意思，末尾怎样改变。'),teStep=step(te,`${te.slice(0,-1)} ＋ ${te.at(-1)} ＝ ${te}。这是用来连接后文的完整写法。例如后接いる时，要把整个表达一起读；单独的て不表示“正在”。`);
+  const targetForm=g.s===past||g.s===past+'ら'?past:te;
+  const replaceEnding=ct.startsWith('五段')?`保留「${stem}」，把最后的「${base.at(-1)}」换成「${targetForm.slice(stem.length)}」：${base} → ${targetForm}。`:how;
+  const connecting=step(te.slice(0,-1),ct==='一段'?`先去掉${base}最后的る，剩下${te.slice(0,-1)}。这一步只展示还没接完的部分。`:ct.includes('サ変')?`する在接${targetForm.at(-1)}时先写成し。这里还没接完，要和下一步的${targetForm.at(-1)}一起看。`:ct.includes('カ変')?'来る在接た／て时，来读き；这里展示还没接完的部分。':`${replaceEnding}这里单列「${te.slice(0,-1)}」只是为了展示变化，它不是另一个可以单独使用的词。${te.endsWith('って')?`小っ不读成つ（tsu）；读完整的${targetForm}时，在${targetForm.at(-1)}前短暂停一拍。`:te.endsWith('んで')?'词尾变成ん，再接だ／で；例如読む的过去写作読んだ。':te.slice(0,-1)===ren?'这个词接ます与接た之前，剩下的部分相同。':'这种词尾发音的变化叫“音变”，先记完整写法即可。'}`);
+  const pastStep=step(past,`${past.slice(0,-1)} ＋ ${past.at(-1)} ＝ ${past}。这就是完整的写法；在一般叙述中，可以用来讲过去做了什么或当时是什么状态。教材把这种写法叫“た形”。${base==='思う'?'思う是“想／认为”，思った在回顾中是“当时想／当时觉得”。':''}`);
   add(te,[initial,connecting,teStep],'te');add(past,[initial,connecting,pastStep],'past');
   add(neg,[initial,step(neg,negHow+' ない增加否定意思：“不……”，它本身不是过去否定。')],'negative');
   add(neg.slice(0,-1)+'かった',[initial,step(neg,negHow),step(neg.slice(0,-1)+'かった','保留ない前面的部分，把ない的い换成かった：ない → なかった。这样得到“过去没有……”；不是把原动词先变た形再加ない。')],'negative-past');
@@ -182,6 +210,8 @@
    const block=walkthroughs.get(text)?.blocks.find(x=>x.start<=start&&x.end>=offset);
    const contextLesson=block?{quote:block.quote,meaning:block.meaning,why:block.why}:null;
    g.analyses=details.length?details.map(a=>({...a,meaningLabel:'本句理解',grammarLessons:lessonsFor(a.quote===g.s?own?.lessonKeys:[]),verbClass:a.quote===g.s?own?.verbClass:null,formTable:a.quote===g.s?own?.formTable:null})):own?[{...own,start,end:offset,contextLesson,grammarLessons:lessonsFor(own.lessonKeys)}]:[];
+   g.baseKana=formReading(book,original.describe(g).base,g.words);
+   for(const a of g.analyses){a.baseKana=formReading(book,a.base,g.words);a.steps=a.steps.map(s=>({...s,kana:formReading(book,s.form,g.words)}));if(a.verbClass?.rows)a.verbClass={...a.verbClass,rows:a.verbClass.rows.map(r=>({...r,kana:formReading(book,r.form,g.words)}))};}
    g.particleKeys=particleKeys(g,details);
   }
   return groups;
@@ -209,5 +239,5 @@
    return m?[{at:m.index,quote:m[0],title,body}]:[];
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();

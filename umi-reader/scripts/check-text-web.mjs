@@ -58,7 +58,7 @@ try {
   const saved = () => JSON.parse(w.localStorage.getItem('umi-progress-v1'));
   const tick = () => new Promise(resolve => setTimeout(resolve, 0));
   const noMedia = () => {
-    assert.equal(doc.querySelector('audio,video,img,source,#play,#loop-sentence,#speed,.repeat-controls,.word-audio,.word-zoom-play,.lesson-audio,#illustration-progress'), null,
+    assert.equal(doc.querySelector('audio,video,img,source,#play,#loop-sentence,#speed,.repeat-controls,.word-audio,.word-zoom-play,.lesson-audio,.form-reading-play,#illustration-progress'), null,
       'The text-only UI must not expose media elements or unavailable playback controls');
     assert.equal(fetchRequests.some(url => /(?:audio|illustrations|\.(?:mp3|wav|webp|png|jpg))(?:[/?]|$)/i.test(url)), false);
   };

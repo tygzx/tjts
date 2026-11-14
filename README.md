@@ -143,3 +143,11 @@ WanaKana 与分词词典相关声明见 `umi-reader/dist/third-party-licenses.tx
 内容源：`scripts/content/grammar-lessons.mjs`；构建：`scripts/build-study-analysis.mjs`；检查：`npm run check:grammar-teaching`（仓库内脚本路径前加`umi-reader/`）。检查覆盖词形链、音变、たら与过去的区别、形容词和判断表达、全书原文和原词对象保持、所有句型的讲解完整性、词语浮窗／列表／语法页、术语和变形对照展开，以及测验答案隔离。新增长讲解为文字，原“听讲解”仍播放已有简述，未重制音频或 APK。
 
 基础活用、状态、条件部分核对参考：[东京外国语大学普通形说明](https://www.coelang.tufs.ac.jp/mt/ja/gmod/courses/c02/lesson21/step1/explanation/038.html)、[ている的状态用法](https://www.coelang.tufs.ac.jp/mt/ja/gmod/courses/c02/lesson24/step1/explanation/045.html)、[条件表达](https://www.coelang.tufs.ac.jp/mt/ja/gmod/courses/c02/lesson42/step1/explanation/083.html)。例句和中文讲解为本项目另写。
+
+## 原形读音与五段入门（2026-11-14）
+
+词语浮窗和变形卡现在显示原形的假名与罗马音，例如思う／おもう／omou。优先按当前词元恢复词尾，保留行う／行く等不同读法；`umi-reader/data/form-readings.json` 提供词典词条读音作后备，无法可靠确定的结构不补猜读音。构建脚本直接使用已提交的读音数据，运行网页无需新增依赖。
+
+“五段动词”用当前词的五组完整形式解释，并说明词尾、原形及小っ。思う→思った改为“保留思，把う换成った”，明确思っ只是展示过程，不单独朗读；て形和た形分别显示当前接法。一段及不规则动词也按当前词展示。`npm run check:base-reading` 验证读音、同形异音、入门对照、按钮与文字版隔离。
+
+有音频的本地完整版另提供“听原形”。本仓库继续不含音频和插图，不显示无法使用的朗读按钮；Mac 更新后仍用 `npm start` 启动。

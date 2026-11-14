@@ -12,6 +12,7 @@ data.walkthroughs=buildWalkthroughs(c.window.BOOK);
 data.particleCombinations=buildParticleCombinations(c.window.BOOK);
 vm.runInNewContext(fs.readFileSync(path.join(root,'dist/grammar.js'),'utf8'),c);
 data.grammarTeaching=buildGrammarLessons(c.window.GRAMMAR,c.window.CURATED);
+data.formReadings=JSON.parse(fs.readFileSync(path.join(root,'data/form-readings.json'),'utf8')).readings;
 for(const e of data.sentences){
  const line=c.window.BOOK.lines[e.sentence-1],source=line.t.map(id=>c.window.BOOK.words[id].s).join('');
  if(source!==e.jp)throw new Error('Grammar source changed: '+e.sentence);
