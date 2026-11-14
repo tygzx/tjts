@@ -46,12 +46,32 @@
  function sentenceChunksHTML(lesson){
   return lesson.blocks.map((b,i)=>'<span class="sentence-chunk-unit">'+(i===0?'<span class="chunk-punctuation">'+esc(lesson.jp.slice(0,b.start))+'</span>':'')+'<button class="sentence-chunk" data-sentence-chunk="'+i+'" aria-label="第 '+(i+1)+' 块：'+esc(b.role)+'，'+esc(b.quote)+'" aria-haspopup="dialog"><span class="chunk-role" lang="zh-CN">'+(i+1)+' · '+esc(b.role)+'</span><span class="chunk-surface">'+chunkSurfaceHTML(b)+'</span>'+(state.meaning?'<span class="chunk-meaning" lang="zh-CN">'+esc(b.meaning)+'</span>':'')+'</button><span class="chunk-punctuation">'+esc(lesson.jp.slice(b.end,lesson.blocks[i+1]?.start??lesson.jp.length))+'</span></span>').join('');
  }
+
+ function grammarVariantHTML(v){
+  if(!v)return '';
+  return '<section class="grammar-variants" data-grammar-variants="1"><h4>'+esc(v.title)+'</h4><p>'+esc(v.intro)+'</p>'+v.variants.map(x=>'<article class="grammar-variant"><h5 lang="ja">'+esc(x.form)+'</h5>'+formReadingHTML(x.form,x.kana)+'<strong>'+esc(x.task)+'</strong><p class="variant-example" lang="ja">'+esc(x.example)+'</p>'+formReadingHTML(x.example,x.reading)+'<p class="variant-chinese">'+esc(x.chinese)+'</p><p>'+esc(x.explanation)+'</p><p class="variant-change">'+esc(x.change)+'</p></article>').join('')+'<h5>先这样选，不用先背术语</h5><ol>'+v.checks.map(s=>'<li>'+esc(s)+'</li>').join('')+'<h5>这几处要分清</h5>'+v.cautions.map(s=>'<p>'+esc(s)+'</p>').join('')+'</section>';
+ }
+ function chunkDetailedHTML(block){
+  const d=block.detail;if(!d)return '';
+  return '<section class="chunk-deep-lesson"><h3>把这里的语法一步步讲清楚</h3><div class="chunk-structure"><small>方括号只是帮助看关系，没有改写小说</small><p lang="ja">'+esc(d.structure)+'</p></div><ol class="chunk-explanation-steps">'+d.parts.map((p,i)=>'<li data-chunk-focus="'+esc(p.quote)+'"><div class="chunk-step-heading"><span>'+(i+1)+'</span><h4>'+esc(p.title)+'</h4></div><p class="chunk-step-japanese" lang="ja">'+esc(p.quote)+'</p>'+formReadingHTML(p.quote,p.kana)+p.paragraphs.map(t=>'<p>'+esc(t)+'</p>').join('')+(p.forms.length?'<ol class="chunk-form-steps">'+p.forms.map((f,j)=>'<li><b lang="ja">'+esc(f.form)+'</b>'+formReadingHTML(f.form,f.kana,j===0)+'<p>'+esc(f.why)+'</p></li>').join('')+'</ol>':'')+'</li>').join('')+'</ol><div class="chunk-rebuild"><h4>最后连回一句中文</h4><p>'+esc(d.rebuild)+'</p></div></section>';
+ }
+ function chunkConnectionNotesHTML(block){
+  if(block.detail)return '';
+  const notes=window.STUDY_GROUPS.chunkConnections(block);
+  return notes.length?'<section class="chunk-connection-notes"><h3>这些词之间怎样接起来</h3>'+notes.map(n=>'<article><h4>'+esc(n.title)+'</h4><p class="chunk-step-japanese" lang="ja">'+esc(n.quote)+'</p><p>'+esc(n.why)+'</p></article>').join('')+'</section>':'';
+ }
+
  function openSentenceChunk(n){
   const lesson=sentenceChunks(),block=lesson?.blocks[n];if(!block||!Number.isInteger(n))return;
   const details=window.STUDY_GROUPS.analyses(B,B.lines[state.index],groups).items.filter(a=>a.start<block.end&&a.end>block.start);
-  const hints=grammarFor().filter(a=>a.at>=block.start&&a.at<block.end);
+  const taught=new Set(details.flatMap(a=>(a.grammarLessons||[]).map(l=>l.key)));
+  const hints=grammarFor().filter(a=>a.at>=block.start&&a.at<block.end&&!window.STUDY_GROUPS.grammarTeaching(a.title).every(l=>taught.has(l.key)));
+  const variants=[...new Map(details.flatMap(a=>a.grammarLessons||[]).filter(l=>l.variantGuide).map(l=>[l.key,l.variantGuide])).values()];
+  const explanations=details.map(a=>analysisHTML(a,true)).join('')+hints.map(a=>'<section class="chunk-pattern-explanation"><h4>'+esc(a.title)+' · '+esc(a.quote)+'</h4><p>'+esc(a.body)+'</p>'+window.STUDY_GROUPS.grammarTeaching(a.title).map(grammarLessonHTML).join('')+'</section>').join('');
+  const extra=block.detail?variants.map(grammarVariantHTML).join('')+(explanations?'<details class="chunk-extra-patterns"><summary>再对照同类词形与接法（选看）</summary>'+explanations+'</details>':''):explanations;
+  const combinations=block.pieces.filter(x=>x.group.combination).map(x=>combinationHTML(x.group,true)).join('');
   const words=block.pieces.filter(x=>x.group.p!=='标点').map(({group:g,index})=>'<button class="outline" data-chunk-word="'+index+'" data-chunk-origin="'+n+'"><span lang="ja">'+esc(g.s)+'</span><small>'+esc(g.k)+'</small></button>').join('');
-  dialog('word-dialog','句意与句型','<p class="chunk-dialog-role">第 '+(n+1)+' / '+lesson.blocks.length+' 块 · '+esc(block.role)+'</p><p class="chunk-dialog-quote" lang="ja">'+esc(block.quote)+'</p><p class="jp-reading jp-kana">'+esc(block.pieces.map(x=>x.group.k||x.group.s).join(' '))+'</p><p class="jp-reading jp-romaji">'+esc(block.pieces.map(x=>x.group.r||wanakana.toRomaji(x.group.k||x.group.s)).join(' '))+'</p><section class="chunk-dialog-meaning"><h3>这一整块是什么意思</h3><p>'+esc(block.meaning)+'</p></section><section class="chunk-dialog-connection"><h3>里面怎么接，怎样连到后文</h3><p>'+esc(block.why)+'</p></section><details class="chunk-sentence-context"><summary>放回整句里看</summary><p><b>先抓主干：</b>'+esc(lesson.spine)+'</p><p><b>谁在做：</b>'+esc(lesson.who)+'</p><p><b>容易混淆：</b>'+esc(lesson.pitfall)+'</p></details>'+(details.length||hints.length?'<section class="chunk-grammar"><h3>继续看词形和句型</h3>'+details.map(a=>analysisHTML(a)).join('')+hints.map(a=>'<details class="form-analysis"><summary>'+esc(a.title)+' · '+esc(a.quote)+'</summary><p>'+esc(a.body)+'</p>'+window.STUDY_GROUPS.grammarTeaching(a.title).map(grammarLessonHTML).join('')+'</details>').join('')+'</section>':'')+'<details class="chunk-words"><summary>查这一块里的词语与读音</summary><div class="chunk-word-buttons">'+words+'</div></details><nav class="chunk-dialog-nav" aria-label="切换句意分块"><button class="outline" data-sentence-chunk="'+(n-1)+'" '+(n===0?'disabled':'')+'>上一块</button><button class="primary" data-sentence-chunk="'+(n+1)+'" '+(n===lesson.blocks.length-1?'disabled':'')+'>下一块</button></nav>');
+  dialog('word-dialog','句意与句型','<p class="chunk-dialog-role">第 '+(n+1)+' / '+lesson.blocks.length+' 块 · '+esc(block.role)+'</p><p class="chunk-dialog-quote" lang="ja">'+esc(block.quote)+'</p><p class="jp-reading jp-kana">'+esc(block.pieces.map(x=>x.group.k||x.group.s).join(' '))+'</p><p class="jp-reading jp-romaji">'+esc(block.pieces.map(x=>x.group.r||wanakana.toRomaji(x.group.k||x.group.s)).join(' '))+'</p><section class="chunk-dialog-meaning"><h3>这一整块是什么意思</h3><p>'+esc(block.meaning)+'</p></section><section class="chunk-dialog-connection"><h3>里面怎么接，怎样连到后文</h3><p>'+esc(block.why)+'</p></section><details class="chunk-sentence-context"><summary>放回整句里看</summary><p><b>先抓主干：</b>'+esc(lesson.spine)+'</p><p><b>谁在做：</b>'+esc(lesson.who)+'</p><p><b>容易混淆：</b>'+esc(lesson.pitfall)+'</p></details>'+chunkDetailedHTML(block)+chunkConnectionNotesHTML(block)+(extra||combinations?'<section class="chunk-grammar"><h3>原形、变形和句型接法</h3>'+extra+combinations+'</section>':'')+'<details class="chunk-words"><summary>查这一块里的词语与读音</summary><div class="chunk-word-buttons">'+words+'</div></details><nav class="chunk-dialog-nav" aria-label="切换句意分块"><button class="outline" data-sentence-chunk="'+(n-1)+'" '+(n===0?'disabled':'')+'>上一块</button><button class="primary" data-sentence-chunk="'+(n+1)+'" '+(n===lesson.blocks.length-1?'disabled':'')+'>下一块</button></nav>');
  }
 
  function sentenceHTML(){
@@ -158,7 +178,7 @@
 
  function grammarLessonHTML(g){
   const c=g.chineseGuide;
-  return '<section class="grammar-lesson" data-grammar-lesson="'+esc(g.key)+'"><h4>'+esc(c?c.title:g.title)+'</h4>'+(c?'<div class="chinese-first-guide"><p><strong>中文里我们会这样说</strong>'+esc(c.chinese)+'</p><p><strong>日语把这个意思放在哪里</strong>'+esc(c.japanese)+'</p><p class="grammar-pitfall"><strong>这里要留意</strong>'+esc(c.watch)+'</p></div>':'')+'<details class="grammar-reference"><summary>再看例句和完整接法（选看）</summary><p class="hint">教材名称：'+esc(g.title)+'</p><dl><dt>具体接法</dt><dd>'+esc(g.connection)+'</dd><dt>表达的意思</dt><dd>'+esc(g.role)+'</dd><dt>换个说法有什么区别</dt><dd>'+esc(g.contrast)+'</dd></dl><div class="grammar-teaching-examples"><strong>对比例句 · 教学例句</strong>'+g.examples.map(e=>'<p lang="ja">'+esc(e.ja)+'</p><p>'+esc(e.zh)+'</p>').join('')+'</div>'+(g.caution?'<p class="grammar-pitfall"><strong>容易误解的地方：</strong>'+esc(g.caution)+'</p>':'')+'</details></section>';
+  return '<section class="grammar-lesson" data-grammar-lesson="'+esc(g.key)+'"><h4>'+esc(c?c.title:g.title)+'</h4>'+(c?'<div class="chinese-first-guide"><p><strong>中文里我们会这样说</strong>'+esc(c.chinese)+'</p><p><strong>日语把这个意思放在哪里</strong>'+esc(c.japanese)+'</p><p class="grammar-pitfall"><strong>这里要留意</strong>'+esc(c.watch)+'</p></div>':'')+grammarVariantHTML(g.variantGuide)+'<details class="grammar-reference"><summary>再看例句和完整接法（选看）</summary><p class="hint">教材名称：'+esc(g.title)+'</p><dl><dt>具体接法</dt><dd>'+esc(g.connection)+'</dd><dt>表达的意思</dt><dd>'+esc(g.role)+'</dd><dt>换个说法有什么区别</dt><dd>'+esc(g.contrast)+'</dd></dl><div class="grammar-teaching-examples"><strong>对比例句 · 教学例句</strong>'+g.examples.map(e=>'<p lang="ja">'+esc(e.ja)+'</p><p>'+esc(e.zh)+'</p>').join('')+'</div>'+(g.caution?'<p class="grammar-pitfall"><strong>容易误解的地方：</strong>'+esc(g.caution)+'</p>':'')+'</details></section>';
  }
  function grammarGlossaryHTML(){
   const terms=window.STUDY_GROUPS.grammarGlossary?.()||[];
@@ -244,7 +264,7 @@
  function nextQuiz(){const round=currentQuiz(),q=round.questions[round.at];if(!q||!Object.hasOwn(round.answers,q.id)||round.finished)return;if(round.at===round.questions.length-1)round.finished=true;else round.at++;round.showHint=false;renderQuiz(true);}
 
  function walkDetailHTML(block,i){
-  return '<article class="walk-detail"><div class="walk-detail-heading"><span class="walk-number">'+(i+1)+'</span><h4>'+esc(block.role)+'</h4></div><p class="walk-quote" lang="ja">'+esc(block.quote)+'</p><p class="walk-meaning">'+esc(block.meaning)+'</p><p class="walk-explanation">'+esc(block.why)+'</p>'+groups.filter(g=>g.combination&&g.combination.start>=block.start&&g.combination.end<=block.end).map(g=>combinationHTML(g)).join('')+'</article>';
+  return '<article class="walk-detail"><div class="walk-detail-heading"><span class="walk-number">'+(i+1)+'</span><h4>'+esc(block.role)+'</h4></div><p class="walk-quote" lang="ja">'+esc(block.quote)+'</p><p class="walk-meaning">'+esc(block.meaning)+'</p><p class="walk-explanation">'+esc(block.why)+'</p>'+chunkDetailedHTML(block)+groups.filter(g=>g.combination&&g.combination.start>=block.start&&g.combination.end<=block.end).map(g=>combinationHTML(g)).join('')+'</article>';
  }
  function walkHTML(){
   const lesson=window.STUDY_GROUPS.walkthrough(B,B.lines[state.index]);

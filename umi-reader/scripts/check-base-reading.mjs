@@ -18,7 +18,7 @@ const hasAudio=!textOnly&&fs.existsSync(path.join(root,'dist/audio-index.js'));
 if(hasAudio){vm.runInNewContext(read('audio-index.js'),c);for(const line of b.lines)for(const g of s.create(b,line))for(const kana of [...g.analyses.map(a=>a.baseKana),...(s.describe(g).base!==g.s?[g.baseKana]:[])].filter(Boolean)){const id=c.window.UMI_AUDIO_INDEX['ja\n'+kana];assert(id,'Missing index: '+kana);assert(fs.statSync(path.join(root,'dist/neural-audio',id+'.mp3')).size>500);audioBases++;}}
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document,calls=[];let halted=0;
 w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:15,illustrations:false}));
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:15,illustrations:false,sentenceMode:'words'}));
 w.createRecordedAudio=()=>({play:(clip,token)=>{calls.push({clip,token});return null;},halt:()=>{halted++;}});
 w.UMI_AUDIO_INDEX={'ja\nおもう':'dummy'};
 if(textOnly)w.eval(read('media-mode.js'));

@@ -211,18 +211,44 @@
   }
   return null;
  }
+ function derivedNoun(g){
+  // Reviewed adjective/noun pairs, not a rule for every noun ending in さ.
+  const pairs={美しさ:'美しい',淋しさ:'淋しい',寂しさ:'寂しい',うれしさ:'うれしい',嬉しさ:'嬉しい',なつかしさ:'なつかしい',懐かしさ:'懐かしい',悲しさ:'悲しい',楽しさ:'楽しい',悔しさ:'悔しい',くやしさ:'くやしい',高さ:'高い',長さ:'長い',広さ:'広い',狭さ:'狭い',暑さ:'暑い',寒さ:'寒い',冷たさ:'冷たい',強さ:'強い',弱さ:'弱い',重さ:'重い',軽さ:'軽い'};
+  const base=pairs[g.s];if(!base||g.p!=='名词'||!g.k.endsWith('さ'))return null;
+  const stem=base.slice(0,-1),kana=g.k.slice(0,-1);
+  return {quote:g.s,base,baseKana:kana+'い',kind:'形容词变成名词',lessonKeys:['i-adjective'],meaning:original.describe(g).definition,meaningLabel:'变化后的词义',steps:[
+   {form:base,kana:kana+'い',why:'原来的词用来描述一个特点。现在要把这个特点本身拿出来谈，像中文从“很美”说到“这种美”，就改成下面的写法。'},
+   {form:stem,kana,why:'只拿掉最后的い，前面的字保留。这是展示改字过程的中间一截，不是让你单独这样说。'},
+   {form:g.s,kana:g.k,why:stem+'＋さ＝'+g.s+'。现在说的是这种特点、程度或感受本身；它可以像一个东西的名称那样继续接は、に等。这里的さ不表示过去，也不是句末感叹。'}
+  ],warning:'这里只讲经过核对的这组词。不能把所有以さ结尾的名词都倒推为い形容词；例如朝（あさ）不适用。'};
+ }
+ function likenessForm(g){
+  if(!['みたい','みたいだ','みたいな','みたいに','みたいだった','みたいで','みたいです'].includes(g.s)||!g.words.some(w=>w.b==='みたい'||w.b==='みたいだ')||g.words.some(w=>['見る','みる'].includes(w.b)))return null;
+  const meanings={みたい:'口语里可以省略判断结尾だ；还要结合前后文看“像／好像”在说什么。',みたいだ:'用だ把“像／好像……”的判断说完整。',みたいな:'把だ换成な，接后面的一个名称：例如船みたいな雲，像船的云。',みたいに:'把だ换成に，接后面怎样做或呈现什么状态：例如船みたいに浮かぶ，像船一样浮着。',みたいだった:'だ换成だった，把“像／好像”的判断放到当时。',みたいで:'用で把这一判断接到后面继续说。',みたいです:'用です把判断说得客气一些。'};
+  return {quote:g.s,base:'みたいだ',baseKana:'みたいだ',kind:'比喻表达的接法',lessonKeys:['mitai'],meaning:original.describe(g).definition,meaningLabel:'表达整体意思',steps:[step('みたい','先保留“像……／好像……”这一部分。它前面整块告诉你像什么，或根据什么事情作出判断。'),step(g.s,meanings[g.s])],warning:'みたい也可根据迹象推测，具体看本句；它和見たい（想看）读音相同，接法不同。'};
+ }
+ function chunkConnections(block){
+  const pieces=block.pieces,notes=[];
+  for(let i=0;i<pieces.length;i++){
+   const g=pieces[i].group,prev=pieces[i-1]?.group,next=pieces[i+1]?.group;
+   if(g.s==='の'&&g.p==='助词'&&prev?.p==='名词'&&next?.p==='名词')notes.push({quote:prev.s+'の'+next.s,title:'前面的名称怎样说明后面的名称',why:'先看右边的「'+next.s+'」，这里要说的东西落在它上面；前面的「'+prev.s+'の」说明是哪一种、谁的，或与什么有关。可以借中文“的”理解这个连接，但整块译成中文时不一定保留一个“的”。若前后还有描述，要把它们一起带上。'});
+   if(g.p==='形容词'&&g.s.endsWith('い')&&next?.p==='名词'&&g.s===original.describe(g).base)notes.push({quote:g.s+next.s,title:'描述特点的词，直接放在名称前面',why:'「'+g.s+'」说明后面的「'+next.s+'」是什么样。中文常在两者之间说“的”，这里日语保留最后的い，直接接后面的名称；不用再添の或な。这一块先合成一个意思，再接后文。'});
+   if(g.s==='な'&&prev&&next?.p==='名词'&&(prev.s.endsWith('的')||prev.words.some(w=>String(w.ct).includes('形容動詞'))))notes.push({quote:prev.s+'な'+next.s,title:'な把特点接到后面的名称',why:'先有「'+next.s+'」这个名称，再用「'+prev.s+'」说明它是什么样。这里靠な把两者接起来，像中文“……的'+next.s+'”。这个な是在块的中间连接两个部分，不是句末感叹，也不表示过去。'});
+  }
+  return notes;
+ }
  function create(book,line){
   const text=line.t.map(id=>book.words[id].s).join(''),groups=combineParticles(feeling(original.create(book,line)),text),entry=reviewed.get(text);
   let offset=0;
   for(const g of groups){
    const start=offset;offset+=g.s.length;
    const details=(entry?.items||[]).filter(a=>a.start<offset&&a.end>start).map(a=>({...a,kind:'本句逐项讲解'}));
-   const own=feelingAnalysis(g)||regular(g)||adjectiveOrCopula(g);
+   const own=feelingAnalysis(g)||regular(g)||adjectiveOrCopula(g)||derivedNoun(g)||likenessForm(g);
    const block=walkthroughs.get(text)?.blocks.find(x=>x.start<=start&&x.end>=offset);
    const contextLesson=block?{quote:block.quote,meaning:block.meaning,why:block.why}:null;
    g.analyses=details.length?details.map(a=>({...a,meaningLabel:'本句理解',grammarLessons:lessonsFor(a.quote===g.s?own?.lessonKeys:[]),verbClass:a.quote===g.s?own?.verbClass:null,formTable:a.quote===g.s?own?.formTable:null})):own?[{...own,start,end:offset,contextLesson,grammarLessons:lessonsFor(own.lessonKeys)}]:[];
    g.baseKana=formReading(book,original.describe(g).base,g.words);
-   for(const a of g.analyses){a.baseKana=formReading(book,a.base,g.words);a.steps=a.steps.map(s=>({...s,kana:formReading(book,s.form,g.words)}));if(a.verbClass?.rows)a.verbClass={...a.verbClass,rows:a.verbClass.rows.map(r=>({...r,kana:formReading(book,r.form,g.words)}))};}
+   for(const a of g.analyses){a.baseKana=a.baseKana||formReading(book,a.base,g.words);a.steps=a.steps.map(s=>({...s,kana:s.kana||formReading(book,s.form,g.words)}));if(a.verbClass?.rows)a.verbClass={...a.verbClass,rows:a.verbClass.rows.map(r=>({...r,kana:formReading(book,r.form,g.words)}))};}
    g.particleKeys=particleKeys(g,details);
   }
   return groups;
@@ -242,13 +268,15 @@
    if(title==='のだ／んだ')return !!first&&['の','ん'].includes(first.s)&&['名词','助词'].includes(first.p);
    if(title==='〜れる／〜られる（形式候选）')return tokens.some(t=>t.start<=a&&t.end>=z&&t.p==='助动词'&&['れる','られる'].includes(t.b));
    if(title==='使役形式（候选）')return tokens.some(t=>t.start<=a&&t.end>=z&&t.p==='助动词'&&['せる','させる'].includes(t.b));
+   if(title==='〜のに')return !!first&&['の','のに'].includes(first.s);
+   if(title==='〜ても／〜でも')return !!first&&['て','で','ても','でも'].includes(first.s);
+   if(title==='〜みたい')return !!first&&['みたい','みたいだ'].includes(first.b);
    return true;
   }
   return patterns.flatMap(([pattern,title,body])=>{
    // Check every occurrence: an early lexical false match must not hide a later real particle.
-   const m=[...source.matchAll(new RegExp(pattern,'g'))].find(m=>valid(m,title));
-   return m?[{at:m.index,quote:m[0],title,body}]:[];
+   return [...source.matchAll(new RegExp(pattern,'g'))].filter(m=>valid(m,title)).map(m=>({at:m.index,quote:m[0],title,body}));
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,chunkConnections,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();

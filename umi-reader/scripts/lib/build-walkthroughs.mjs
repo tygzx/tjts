@@ -1,4 +1,5 @@
 import {sentenceWalkthroughs} from '../content/sentence-walkthroughs.mjs';
+import {chunkGrammarDetails} from '../content/chunk-grammar-details.mjs';
 export function buildWalkthroughs(book,lessons=sentenceWalkthroughs){
  const seen=new Set();
  return lessons.map(lesson=>{
@@ -10,7 +11,14 @@ export function buildWalkthroughs(book,lessons=sentenceWalkthroughs){
    const start=jp.indexOf(b.quote,offset),end=start+b.quote.length;
    if(start<0||!punctuationOnly(jp.slice(offset,start)))throw new Error('Uncovered or changed Japanese at '+lesson.sentence+' '+b.quote);
    if(!b.role||!b.meaning||!b.why)throw new Error('Incomplete teaching block '+lesson.sentence);
-   offset=end;return {...b,start,end};
+   const detail=chunkGrammarDetails.find(d=>d.sentence===lesson.sentence&&d.quote===b.quote);
+   if(detail){
+    if(!detail.structure||!detail.rebuild||!detail.parts.length)throw new Error('Incomplete detailed chunk '+lesson.sentence);
+    for(const p of detail.parts){
+     if(!b.quote.includes(p.quote)||!p.kana||!p.title||!p.paragraphs.length||p.paragraphs.some(x=>!x.trim())||p.forms.some(f=>!f.form||!f.kana||!f.why))throw new Error('Invalid detailed grammar span '+lesson.sentence+' '+p.quote);
+    }
+   }
+   offset=end;return {...b,start,end,...detail?{detail}:{} };
   });
   if(!punctuationOnly(jp.slice(offset))||!blocks.length)throw new Error('Uncovered ending '+lesson.sentence);
   for(const n of lesson.links)if(n<1||n>book.lines.length)throw new Error('Invalid contextual link '+n);

@@ -33,7 +33,7 @@ assert.equal(JSON.stringify(b),before);
 const stale=structuredClone(b);stale.lines[164]={...stale.lines[164],t:stale.lines[0].t};assert.throws(()=>buildParticleCombinations(stale),/Stale/);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document;
 w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:164,illustrations:false}));
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:164,illustrations:false,sentenceMode:'words'}));
 for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',f)))w.eval(read(f));
 const button=d.querySelector('[aria-label="查看 からは"]');assert(button);button.click();
 const popup=d.querySelector('#word-dialog');assert(popup.open);assert(popup.querySelector('.combination-lesson[open]'));assert.match(popup.textContent,/里伽子那一方/);assert.match(popup.textContent,/方向相反/);assert.equal(popup.querySelectorAll('.combination-parts dt').length,2);

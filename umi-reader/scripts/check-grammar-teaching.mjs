@@ -45,7 +45,7 @@ assert.deepEqual(Array.from(voice.grammarLessons,x=>x.key),['passive-potential',
 assert(voice.contextLesson?.why.includes('被动'),'Reviewed context resolves the role; generic form alone does not');
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document;
 w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:18,illustrations:false}));
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:18,illustrations:false,sentenceMode:'words'}));
 for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',f)))w.eval(read(f));
 d.querySelector('[aria-label="查看 した"]').click();const popup=d.querySelector('#word-dialog');assert(popup.open);
 assert(popup.querySelector('[data-grammar-lesson="past"]'));assert.match(popup.textContent,/一步一步怎么变/);assert.match(popup.textContent,/し ＋ た/);assert.match(popup.textContent,/不是单纯过去|不能.*过去|不.*过去/);
