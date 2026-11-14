@@ -239,5 +239,5 @@
    return m?[{at:m.index,quote:m[0],title,body}]:[];
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();

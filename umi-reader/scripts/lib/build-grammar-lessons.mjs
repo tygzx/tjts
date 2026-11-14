@@ -1,5 +1,6 @@
 import {grammarLessons,grammarTitleKeys,grammarGlossary,grammarLessonReferences} from '../content/grammar-lessons.mjs';
 import {grammarChineseGuides} from '../content/grammar-chinese-guide.mjs';
+import {godanPrimer} from '../content/godan-primer.mjs';
 export function buildGrammarLessons(patterns,curated={}){
  const keys=new Set();
  for(const g of grammarLessons){
@@ -12,5 +13,5 @@ export function buildGrammarLessons(patterns,curated={}){
  for(const [,title] of patterns)if(!grammarTitleKeys[title])throw new Error('Grammar pattern without explanation: '+title);
  for(const item of Object.values(curated))for(const [,title] of item.g||[])if(!grammarTitleKeys[title])throw new Error('Curated grammar without explanation: '+title);
  for(const key of Object.keys(grammarChineseGuides))if(!keys.has(key))throw new Error('Unknown Chinese-first guide: '+key);
- return {lessons:grammarLessons.map(g=>({...g,chineseGuide:grammarChineseGuides[g.key]})),titleKeys:grammarTitleKeys,glossary:grammarGlossary,references:grammarLessonReferences};
+ return {lessons:grammarLessons.map(g=>({...g,chineseGuide:grammarChineseGuides[g.key]})),titleKeys:grammarTitleKeys,glossary:grammarGlossary,godanPrimer,references:grammarLessonReferences};
 }

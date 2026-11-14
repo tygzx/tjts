@@ -194,3 +194,12 @@
 .grammar-verb-class{margin-top:18px}.grammar-in-context{margin:16px 0}.grammar-in-context h4{margin-top:0}.context-chinese{font-size:17px;font-weight:600}
 .chinese-reading-primer{border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:16px 0;line-height:1.9}.chinese-reading-primer li{margin:10px 0}
 @media(max-width:600px){.chinese-first-guide>p{line-height:1.9}.chinese-reading-primer{padding:10px 12px}.context-chinese{font-size:16px}}
+
+/* Word connections and godan primer */
+.spelling-note{background:#f1f7fa;border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0;line-height:1.9}.spelling-note h4{margin-top:0}
+.spelling-pair{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}.spelling-pair small{display:block;color:var(--muted);font-size:12px}.spelling-pair b{display:block;font-size:28px;font-weight:500}
+.godan-primer{font-size:14px;line-height:1.95}.godan-primer h4{font-size:15px;margin:24px 0 10px}.godan-primer li{margin:9px 0}
+.godan-primer table{width:100%;border-collapse:collapse;font-size:13px}.godan-primer th,.godan-primer td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.godan-form-cards{display:grid;gap:12px}.godan-form-cards article{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff)}.godan-form-cards h5{font-size:22px;margin:5px 0}.godan-form-cards p{margin:5px 0}.godan-form-cards .form-pronunciation{margin-left:0}
+.godan-primer-toggle,.godan-ending-rules{margin:16px 0}.godan-primer-toggle>summary,.godan-ending-rules>summary{cursor:pointer;line-height:1.8}
+@media(max-width:600px){.spelling-note{padding:12px}.spelling-pair{gap:8px}.spelling-pair b{font-size:24px}.godan-primer th,.godan-primer td{padding:6px}}

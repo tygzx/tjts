@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {chapterGuides} from './content/chapter-one-syntax.mjs';
 import {particleContexts} from './content/particle-context.mjs';
 import {particleHandbook,particlePrinciples} from './content/particle-handbook.mjs';
+import {wordConnectionDetails} from './content/word-connection-details.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),c={window:{}};
 vm.runInNewContext(fs.readFileSync(path.join(root,'dist/book.js'),'utf8'),c);
 const book=c.window.BOOK,entries=new Map();
@@ -138,6 +139,16 @@ for(const [n,quote,keys,base,relation,reason,contrast,meaning] of particleContex
  // Keep earlier conjugation steps when enriching an already explained form.
  if(existing)item.particleDetails={relation,reason,contrast};
  item.contextual=true;
+}
+for(const detail of wordConnectionDetails){
+ const item=entries.get(detail.sentence)?.items.find(x=>x.quote===detail.quote);
+ if(!item)throw new Error('Missing expression for word connections: '+detail.sentence);
+ for(const spelling of detail.spellings){
+  if(!item.quote.includes(spelling.source)||!spelling.other||!spelling.kana||!spelling.explanation)throw new Error('Invalid spelling note: '+detail.sentence);
+ }
+ if(!detail.steps.length||detail.steps.some(([form,why])=>!form||!why))throw new Error('Incomplete word connections: '+detail.sentence);
+ item.spellings=detail.spellings;
+ item.steps=detail.steps.map(([form,why])=>({form,why}));
 }
 for(const [n,guide] of chapterGuides){
  if(!entries.has(n))entries.set(n,{sentence:n,jp:book.lines[n-1].t.map(id=>book.words[id].s).join(''),items:[]});
