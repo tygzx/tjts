@@ -3,6 +3,11 @@ import {buildGrammarLessons} from './lib/build-grammar-lessons.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),read=f=>fs.readFileSync(path.join(root,'dist',f),'utf8'),c={window:{}};
 for(const f of ['book.js','grammar.js','study-morphology.js','study-expressions.js','study-groups.js'])vm.runInNewContext(read(f),c);
 const b=c.window.BOOK,s=c.window.STUDY_GROUPS,before=JSON.stringify(b),lessons=buildGrammarLessons(c.window.GRAMMAR,c.window.CURATED);
+assert.equal(lessons.lessons.length,73);
+for(const lesson of lessons.lessons){
+ assert(lesson.chineseGuide?.chinese&&lesson.chineseGuide.japanese&&lesson.chineseGuide.watch,'Chinese-first explanation for '+lesson.key);
+ assert(!/前项|后项|非过去肯定|未然形|连用形|谓语|词干|语态/.test(Object.values(lesson.chineseGuide).join('')),'Do not require grammar terminology before explaining '+lesson.key);
+}
 let forms=0,contexts=0,manual=0;
 for(const line of b.lines){
  const gs=s.create(b,line),text=line.t.map(i=>b.words[i].s).join('');assert.equal(gs.map(g=>g.s).join(''),text);
@@ -45,10 +50,17 @@ for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','play
 d.querySelector('[aria-label="查看 した"]').click();const popup=d.querySelector('#word-dialog');assert(popup.open);
 assert(popup.querySelector('[data-grammar-lesson="past"]'));assert.match(popup.textContent,/一步一步怎么变/);assert.match(popup.textContent,/し ＋ た/);assert.match(popup.textContent,/不是单纯过去|不能.*过去|不.*过去/);
 assert(popup.querySelector('.grammar-in-context'));assert.match(popup.querySelector('.analysis-meaning').textContent,/词语意思/);assert(!popup.querySelector('.analysis-meaning').textContent.includes('本句理解'));
+assert.match(popup.querySelector('.chinese-first-guide').textContent,/中文|日语/);
+assert.equal(popup.querySelector('.grammar-verb-class').open,false,'Taxonomy is optional, not the entry point');
+assert([...popup.querySelectorAll('.grammar-reference')].every(el=>!el.open),'Formal rules are folded by default');
+const visibleOrder=popup.querySelector('.form-analysis').innerHTML;
+assert(visibleOrder.indexOf('grammar-in-context')<visibleOrder.indexOf('analysis-base'),'Actual sentence meaning comes first');
+assert(visibleOrder.indexOf('chinese-first-guide')<visibleOrder.indexOf('一步一步怎么变'),'Explain the purpose before asking readers to transform words');
+const reference=popup.querySelector('.grammar-reference');reference.querySelector('summary').click();assert(reference.open);assert.match(reference.textContent,/具体接法/);
 const table=popup.querySelector('.grammar-form-table');table.querySelector('summary').click();assert(table.open);assert.equal(table.querySelectorAll('tbody tr').length,8);
 const terms=popup.querySelector('.grammar-glossary');terms.querySelector('summary').click();assert(terms.open);assert.match(terms.textContent,/普通形不等于只有原形/);
 popup.close();d.querySelector('[data-tab="words"]').click();assert(d.querySelector('.word-analysis [data-grammar-lesson="past"]'));
-d.querySelector('[data-tab="grammar"]').click();assert(d.querySelector('.sentence-analysis .grammar-lesson'));
+d.querySelector('[data-tab="grammar"]').click();assert(d.querySelector('.sentence-analysis .grammar-lesson'));assert(d.querySelector('.chinese-reading-primer'));
 // Opening curated cards get their explanations too, not only automatically matched hints.
 d.querySelector('#jump-number').value='1';d.querySelector('#jump').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 d.querySelector('[data-tab="grammar"]').click();const cards=[...d.querySelectorAll('.grammar-item')];assert(cards.length);assert(cards.every(card=>card.querySelector('.grammar-lesson')));

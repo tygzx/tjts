@@ -34,5 +34,5 @@ for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','play
 const word=[...d.querySelectorAll('[data-select]')].find(e=>e.getAttribute('aria-label')==='查看 気もした');assert(word);word.click();
 const dialog=d.querySelector('#word-dialog');assert(dialog.open);assert.match(dialog.textContent,/気がする/);assert.match(dialog.textContent,/も替换が/);assert.match(dialog.textContent,/变时态的是する/);assert(dialog.querySelectorAll('details[open]').length>0);
 dialog.close();d.querySelector('[data-tab="grammar"]').click();assert.match(d.querySelector('.sentence-guide').textContent,/第 10 句/);assert.match(d.querySelector('.sentence-analysis').textContent,/けれど转折/);
-assert(d.querySelector('.sentence-analysis details').open);
+assert(d.querySelector('.sentence-analysis .form-analysis').open);
 dom.window.close();console.log(JSON.stringify({studyAnalysis:'passed',covered,counts,sourcePreserved:true,popup:true,grammarGuide:true}));

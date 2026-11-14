@@ -99,10 +99,10 @@
  }
  function feelingAnalysis(g){
   if(g.rule!=='feeling-expression')return null;
-  const p=g.s[1],tail=g.s.slice(2),steps=[step('気がする','常用基本表达：觉得……；「気」是感觉，「が」连接主语和谓语，「する」在整个表达里理解。')];
+  const p=g.s[1],tail=g.s.slice(2),steps=[step('気がする','先整块记成“有这种感觉／觉得……”。前面那段话告诉你，到底觉得什么。不要按“气＋做”逐字翻。')];
   const past=tail==='した',neg=tail==='しない'||tail==='しなかった';
-  if(p!=='が')steps.push(step('気'+p+'する',p==='も'?'用「も」占据原来「が」的位置，添加“也”的意味；这是助词替换，不是「が」的活用。':'用「は」占据「が」的位置，把这种感觉提出来作话题或对比。'));
-  if(tail!=='する')steps.push(step(g.s,past?'する是不规则动词：し＋た＝した，用过去形表示当时有这种感觉。':neg?'する → しない；若为「しなかった」，再把ない变成过去否定なかった。':'する → して：用て形连接后文。'+(tail==='してきた'?'再接くる的过去形きた，表示逐渐产生这种感觉。':'')));
+  if(p!=='が')steps.push(step('気'+p+'する',p==='も'?'把中间的が换成も，就像中文在“觉得”前加了一个“也”。只是换掉这一个字，后面的动作还没改。':'把中间的が换成は，先提起“这种感觉”，常带“至少我是这么觉得／倒是有这种感觉”的对比口气。'));
+  if(tail!=='する')steps.push(step(g.s,past?'最后把する换成した，就在说“那时候有这种感觉”。其中し＋た＝した；如果前面还用了も，就把“也”一起读进去。':neg?'する → しない，变成“不觉得”。如果写成しなかった，再把ない换成なかった，就是“当时不觉得”。':'把最后的する换成して，说明话还要往下接。'+(tail==='してきた'?'再接きた，整段说这种感觉渐渐出现了。':'')));
   return {quote:g.s,base:'気がする',steps,meaning:original.describe(g).definition,meaningLabel:'表达整体意思',lessonKeys:['feeling'],warning:'整个表达的基本形式是「気がする」，其中动词的词典形才是「する」。变化顺序用于帮助理解，并不是说说话时必须依次造出这些句子。',kind:'表达结构'};
  }
  function regular(g){
@@ -129,10 +129,10 @@
   if(ct.startsWith('五段'))verbClass.rows=[['あ段 a',neg,'否定：不……'],['い段 i',ren+'ます','用礼貌的方式说……'],['う段 u',base,'词典收录的原形'],['え段 e',cond,'如果……'],['お段 o',vol,'打算……／……吧；有时表推测']].map(([label,form,meaning])=>({label,form,meaning}));
   if(ct.startsWith('五段'))verbClass.note=base.endsWith('う')?`这里的原形以う结尾。说“不……”时用わない：${base} → ${neg}；わ读wa，也归在a这一组。`:'上面按元音分五格。て形、た形还要用专门的词尾写法，不能仅靠这五格直接相加。';
   const negHow=base==='ある'?'ある的否定是例外，直接用ない，不说あらない。':ct.startsWith('五段')?`把词尾「${base.at(-1)}」换成「${neg.slice(stem.length,-2)}」，再加ない：${base} → ${neg}。`:`${base} → ${neg.slice(0,-2)} ＋ ない → ${neg}。${ct==='一段'?'先去掉る。':'这是不规则动词要单独记的接法。'}`;
-  const renHow=`${base} → ${ren}。${ct.startsWith('五段')?'词尾换到い段。':ct==='一段'?'去掉最后的る。':'使用不规则的连接形式。'}「连用形」就是此处为接ます、たい等准备的形式，不是一个新的动作。`;
-  const volHow=ct.startsWith('五段')?`词尾换到お段，再加う：${base} → ${vol}。`:ct==='一段'?`去る，再加よう：${base} → ${vol}。`:`此词的不规则意志形是${vol}。`;
+  const renHow=`${base} → ${ren}。${ct.startsWith('五段')?`保留「${stem}」，把最后的「${base.at(-1)}」换成「${ren.slice(stem.length)}」。`:ct==='一段'?'先拿掉最后的る。':`这个词要用「${ren}」来接后面的字，先把这一对写法记在一起。`}这里还没接完，接下来要加ます、たい等字，才知道要表达客气、想做，还是别的意思。`;
+  const volHow=ct.startsWith('五段')?`保留「${stem}」，把结尾「${base.at(-1)}」换成「${vol.slice(stem.length)}」：${base} → ${vol}。`:ct==='一段'?`拿掉最后的る，再接よう：${base} → ${vol}。`:`这个词用${vol}来表达这一层意思，和${base}一起记。`;
   const volSense=['ある','できる','出来る','わかる','分かる','見える','聞こえる'].includes(base)?'这个词通常不表示可主动决定的动作；此形式常表达推测，不能机械译成“打算”。':'通常表达自己的打算或“来……吧”的提议，接か可自问或商量。';
-  const condHow=ct.startsWith('五段')?`词尾换到え段，再加ば：${base} → ${cond}。`:ct==='一段'?`去る，再加れば：${base} → ${cond}。`:`此词的不规则条件形是${cond}。`;
+  const condHow=ct.startsWith('五段')?`保留「${stem}」，把结尾「${base.at(-1)}」换成「${cond.slice(stem.length)}」：${base} → ${cond}。`:ct==='一段'?`拿掉最后的る，再接れば：${base} → ${cond}。`:`这个词说“如果……”时，写作${cond}。`;
   const candidates=[];
   const add=(surface,steps,key)=>candidates.push({surface,steps,lessonKeys:[key]});
   const initial=step(base,'这是查词典时用的完整写法，也叫“原形”。先认出这个词，再看为了表达不同意思，末尾怎样改变。'),teStep=step(te,`${te.slice(0,-1)} ＋ ${te.at(-1)} ＝ ${te}。这是用来连接后文的完整写法。例如后接いる时，要把整个表达一起读；单独的て不表示“正在”。`);
@@ -144,10 +144,10 @@
   add(neg,[initial,step(neg,negHow+' ない增加否定意思：“不……”，它本身不是过去否定。')],'negative');
   add(neg.slice(0,-1)+'かった',[initial,step(neg,negHow),step(neg.slice(0,-1)+'かった','保留ない前面的部分，把ない的い换成かった：ない → なかった。这样得到“过去没有……”；不是把原动词先变た形再加ない。')],'negative-past');
   add(vol,[initial,step(vol,volHow+volSense)],'volitional');
-  add(cond,[initial,step(cond,condHow+' 把前项设为条件：“如果……”，接下来应找后项结果。')],'ba');
+  add(cond,[initial,step(cond,condHow+' 先把这一段读成“如果……”，再往后找“会怎么样”。')],'ba');
   add(ren+'たい',[initial,step(ren,renHow),step(ren+'たい','接たい表示想做；愿望不等于动作已经发生。たい也能继续变たかった（以前想）或たくない（不想）。')],'desire');
-  add(ren+'ながら',[initial,step(ren,renHow),step(ren+'ながら','接ながら可表示一边做前项一边做后项，主要动作在后面；若有预期落差，也可能是让步。')],'nagara');
-  for(const ending of ['ます','ました','ません','ませんでした'])add(ren+ending,[initial,step(ren,renHow),step(ren+ending,{'ます':'接ます，增加礼貌程度。非过去肯定，可说习惯或将来，不等于正在。','ました':'接ました，把动作说成礼貌的过去肯定。','ません':'接ません，表示礼貌的非过去否定：“不……”。','ませんでした':'接ませんでした，表示礼貌的过去否定：“没有……”。'}[ending])],'polite');
+  add(ren+'ながら',[initial,step(ren,renHow),step(ren+'ながら','再接ながら，常是“一边做这件事，一边做后面的事”。如果后文与前面说的矛盾，也可能是“明明……却……”，要读到后面再判断。')],'nagara');
+  for(const ending of ['ます','ました','ません','ませんでした'])add(ren+ending,[initial,step(ren,renHow),step(ren+ending,{'ます':'最后接ます，把话说得客气些。可以说平常做或将来会做，不是只要有ます就表示正在做。','ました':'最后接ました，客气地说“那时候做了”。','ません':'最后接ません，客气地说“不做”。','ませんでした':'最后接ませんでした，客气地说“那时候没有做”。'}[ending])],'polite');
   add(past+'ら',[initial,connecting,pastStep,step(past+'ら','在整个た形后加ら，形成たら条件：“如果……／等……以后”。即使涉及明天未发生的事也能用，不是单纯过去叙述。')],'tara');
   const endings={いる:'表示动作进行中，或动作结束后留下的状态。',いた:'いる → いた：把进行或持续的状态放到过去。',いて:'いる → いて：用て形继续连接后文。',いない:'いる → いない：否定这种进行或持续状态。',しまう:'接しまう，表示做完；也可能带遗憾、不由自主等语气。',しまった:'しまう → しまった，表示已经完成；具体感情色彩看上下文。',おく:'接おく，表示事先做好或保留某状态。',おいて:'おく → おいて，用て形继续连接。',おこう:'おく → おこう（意志形），表示打算先做好。',くる:'接くる，表示朝说话者这边来，或变化发展到说话时。',きた:'くる → きた，用过去形表达上述动作或变化。',いく:'接いく，表示离开说话者方向，或变化继续发展下去。',みる:'接みる，表示试着做，或经历以后看看结果。',みた:'みる → みた，表示试着做了。',もらう:'接もらう，主语接受别人为自己做这件事。',もらった:'もらう → もらった，表示过去接受了帮助。',くれる:'接くれる，别人为说话者或说话者一方做事。',くれた:'くれる → くれた，表示过去给说话者一方的帮助。'};
   for(const [ending,why] of Object.entries(endings)){
@@ -168,7 +168,7 @@
    const aux=ct.includes('サ変')?(causative?'せる':'れる'):ct.startsWith('五段')?(causative?'せる':'れる'):(causative?'させる':'られる');
    const beforeVoice=g.words.slice(0,g.words.indexOf(voices[0])).map(x=>x.s).join('');
    if(voices[0].b===aux&&beforeVoice===derived.slice(0,-aux.length)){
-    const head=derived.slice(0,-1),chain=[initial,step(derived.slice(0,-aux.length),`${base}要接「${aux}」，先形成「${derived.slice(0,-aux.length)}」这个连接部分。${ct.includes('カ変')?'这里的来读こ。':''}`),step(derived,`${derived.slice(0,-aux.length)} ＋ ${aux} ＝ ${derived}。${causative?'使役形式让别人执行动作，可以是要求或允许。':'这是れる／られる形式；被动、可能、尊敬或自发须看角色与上下文。'}后接的${aux}按一段式变化，不能继续套原动词的五段词尾。`)];
+    const head=derived.slice(0,-1),chain=[initial,step(derived.slice(0,-aux.length),`先把「${base}」改成「${derived.slice(0,-aux.length)}」，等着接下面的「${aux}」。这一截还没接完。${ct.includes('カ変')?'这里的来读こ。':''}`),step(derived,`${derived.slice(0,-aux.length)} ＋ ${aux} ＝ ${derived}。${causative?'现在多了“让别人做”的意思。谁要求或允许，谁真正做动作，要分别找出来。':'现在可能在说“被别人做”“自己能做”，也可能是在尊敬别人或说感受自然出现。先看前后人物关系，再选意思。'}接下来如果还要说“不、当时”等，就改这个新写法最后的る。`)];
     const voiceForms=[['',[],null],['た',[[head,'后接成分去最后的る，准备接た。'],[head+'た',`${head} ＋ た：把整个表达放到过去。`]],'past'],['て',[[head,'后接成分去最后的る。'],[head+'て','接て，准备连接后面的状态或动作。']],'te'],['ない',[[head+'ない','后接成分去る，加ない，否定整个表达。']],'negative'],['なかった',[[head+'ない','先去る，加ない，否定。'],[head+'なかった','ない变なかった，得到过去否定。']],'negative-past'],['ている',[[head+'て','后接成分去る＋て，把整个动作交给いる。'],[head+'ている','再接いる，表达这个动作的进行或结果状态。']],'progressive'],['ていた',[[head+'て','后接成分去る＋て，连接状态成分。'],[head+'ている','接いる，表示整个动作的进行或持续状态。'],[head+'ていた','いる→いた，把这种状态放到过去。']],'progressive'],['ていない',[[head+'ている','先用て形＋いる表示状态。'],[head+'ていない','いる→いない，否定这种状态。']],'progressive'],['ていて',[[head+'ている','先用て形＋いる表示状态。'],[head+'ていて','いる→いて，用て形继续连接后文。']],'progressive'],['ます',[[head+'ます','后接成分去る＋ます，成为礼貌非过去形式。']],'polite'],['ました',[[head+'ます','后接成分去る＋ます。'],[head+'ました','ます→ました，成为礼貌过去形式。']],'polite']];
     for(const [ending,steps,extra] of voiceForms)candidates.push({surface:ending?head+ending:derived,steps:[...chain,...steps.map(([f,w])=>step(f,w))],lessonKeys:[key,...extra?[extra]:[]]});
    }
@@ -183,20 +183,20 @@
   const adjective=g.words.find(w=>w.b===base&&w.p==='形容词'&&w.ct?.startsWith('形容詞'));
   if(adjective&&base.endsWith('い')&&g.s!==base){
    const stem=base==='いい'?'よ':base.slice(0,-1),entries=[
-    [stem+'かった',[[base,'い形容词的基本形式。'],[stem+'かった','去最后的い，接かった，表达过去的状态。']]],
-    [stem+'くない',[[base,'い形容词的基本形式。'],[stem+'く','去最后的い，接く，准备连接否定。'],[stem+'くない','再接ない，否定这个性质或状态。']]],
-    [stem+'くなかった',[[base,'い形容词的基本形式。'],[stem+'くない','い变く，再接ない，先否定。'],[stem+'くなかった','把ない变なかった，表示过去不是这种状态。']]],
-    [stem+'くて',[[base,'い形容词的基本形式。'],[stem+'くて','い变くて，连接后面的特点、结果或原因关系；不单独决定时态。']]],
-    [stem+'く',[[base,'い形容词的基本形式。'],[stem+'く','い变く，常修饰后面的动作，或接なる／する表达状态变化。具体关系要看后面的词。']]],
-    [stem+'ければ',[[base,'い形容词的基本形式。'],[stem+'ければ','い换成ければ，表达如果处于这个状态。']]]
+    [stem+'かった',[[base,'先认这个词原来的写法，它是在说某个特点或状态。'],[stem+'かった','拿掉最后的い，接かった。这样就在回顾“那时候是这个样子”。']]],
+    [stem+'くない',[[base,'先认这个词原来的写法，它是在说某个特点或状态。'],[stem+'く','把最后的い换成く，准备往后接。'],[stem+'くない','再加ない，变成“不这样”。比如寒くない，就是不冷。']]],
+    [stem+'くなかった',[[base,'先认这个词原来的写法，它是在说某个特点或状态。'],[stem+'くない','把い换成く，再加ない，先说“不这样”。'],[stem+'くなかった','把最后的ない换成なかった，再加上“当时”的意思：那时候不这样。']]],
+    [stem+'くて',[[base,'先认这个词原来的写法，它是在说某个特点或状态。'],[stem+'くて','把最后的い换成くて，说明后面还要接话。可能接另一个特点，也可能说因为这样，才发生了后面的事。']]],
+    [stem+'く',[[base,'先认这个词原来的写法，它是在说某个特点或状态。'],[stem+'く','把最后的い换成く，往后看：比如早く起きる，是“早早地起床”；寒くなる，是“变冷”。后面的词决定整段怎么读。']]],
+    [stem+'ければ',[[base,'先认这个词原来的写法，它是在说某个特点或状态。'],[stem+'ければ','把最后的い换成ければ，说的是“如果是这个样子……”，再往后找结果。']]]
    ];
    const found=entries.find(([s])=>s===g.s);if(!found)return null;
-   if(base==='いい')found[1][0][1]+='いい的这些变形通常使用よい的词干よ，不是いかった。';
+   if(base==='いい')found[1][0][1]+='いい要特别记：这里先按よい来改，所以“那时好”说よかった。';
    return {quote:g.s,base,steps:found[1].map(([f,w])=>step(f,w)),meaning:original.describe(g).definition,meaningLabel:'词语意思（不等于完整语法）',kind:'形容词活用拆解',lessonKeys:['i-adjective']};
   }
   if(base==='だ'&&g.words.some(w=>w.b==='だ'&&w.ct==='特殊・ダ')){
-   const forms={だった:['copula','だ先变成连接た的だっ，再接た：だっ＋た＝だった。表示过去的判断，不是动词する。'],で:['copula','だ变成连接形式で，把名词或な形容词的判断接向后文。这里的で不是地点助词。'],であった:['copula','だ可用较书面的である表达；ある→あった，得到であった，表示过去的判断。'],だろう:['darou','だ变だろ＋う，形成推测或确认的だろう，不是过去时。'],なら:['nara','判断だ的条件形式なら，把前面所说的身份、状态当作话题或假定。']};
-   const found=forms[g.s];if(found)return {quote:g.s,base,steps:[step('だ','名词或な形容词后使用的普通体判断形式。'),step(g.s,found[1])],meaning:original.describe(g).definition,meaningLabel:'词语意思（不等于完整语法）',kind:'判断表达的变形',lessonKeys:[found[0]]};
+   const forms={だった:['copula','把だ换成だった，就在说“那时候是……／那时候很……”。比如学生だ→学生だった，是“是学生→那时是学生”，不是做了一个动作。'],で:['copula','把だ换成で，是把“是怎样”的这段话接到后面继续说。这里的で不是在交代动作发生的地点。'],であった:['copula','书里也常用である来说“是……”。其中ある换成あった，就得到であった，讲“那时候是……”。'],だろう:['darou','把だ换成だろう，加上“大概是吧／是这样吧”的口气。这里不是在交代过去。'],なら:['nara','用なら接住前面说的事情，类似中文“如果你说的是……／要是这样的话……”，再看后面要说什么。']};
+   const found=forms[g.s];if(found)return {quote:g.s,base,steps:[step('だ','先看前面的词。比如学生だ是“是学生”，静かだ是“安静”；だ接在它们后面把话说完整。'),step(g.s,found[1])],meaning:original.describe(g).definition,meaningLabel:'词语意思（不等于完整语法）',kind:'判断表达的变形',lessonKeys:[found[0]]};
   }
   return null;
  }
