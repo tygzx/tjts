@@ -35,7 +35,7 @@ const synth={words:[{s:'読ん',b:'読む',p:'动词',ct:'五段・マ行',f:'�
 const teGroup=s.create(synth,{t:[0,1]}).find(g=>g.s==='読んで');assert(teGroup);assert(teGroup.particleKeys.includes('て'));assert(!teGroup.particleKeys.includes('で'));
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document;
 w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:144,illustrations:false}));
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:144,illustrations:false,sentenceMode:'words'}));
 for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',f)))w.eval(read(f));
 d.querySelector('[data-tab="grammar"]').click();assert.match(d.querySelector('.sentence-guide').textContent,/不是转折/);
 assert(![...d.querySelectorAll('.grammar-item')].some(el=>/のに/.test(el.textContent)&&/虽然|明明/.test(el.textContent)),'Do not show a contradictory generic のに card');

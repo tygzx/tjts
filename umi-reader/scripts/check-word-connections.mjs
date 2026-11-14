@@ -15,7 +15,7 @@ const primer=s.godanPrimer();assert.equal(primer.forms.length,5);assert.deepEqua
 assert.deepEqual(Array.from(primer.grid[0]),['ば行','ば','び','ぶ','べ','ぼ']);assert.equal(primer.endings.length,5);assert.match(primer.pastIntro,/とんだ/);assert.match(primer.classification,/帰る.*五段/);assert.match(primer.classification,/食べる.*一段/);assert(primer.exceptions.some(x=>x.includes('わない')));
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document;
 w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:15,illustrations:false}));
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:15,illustrations:false,sentenceMode:'words'}));
 if(fs.existsSync(path.join(root,'dist/media-mode.js')))w.eval(read('media-mode.js'));
 for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',f)))w.eval(read(f));
 d.querySelector('[aria-label="查看 とぶ"]').click();const popup=d.querySelector('#word-dialog'),note=popup.querySelector('.spelling-note');assert(note);assert.match(note.textContent,/同一个词/);assert.match(note.querySelector('.form-pronunciation').textContent,/とぶ.*tobu/);

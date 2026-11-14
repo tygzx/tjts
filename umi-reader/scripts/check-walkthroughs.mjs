@@ -21,7 +21,7 @@ const swapped=structuredClone(lessons[0]);swapped.blocks.reverse();assert.throws
 assert.equal(JSON.stringify(b),original);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document;
 w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:20,illustrations:false}));
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:20,illustrations:false,sentenceMode:'words'}));
 for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',f)))w.eval(read(f));
 d.querySelector('[data-tab="walk"]').click();assert.match(d.querySelector('.walk-spine').textContent,/内层取钱的是母亲/);
 assert.equal(d.querySelectorAll('.walk-chunk').length,4);assert.equal(d.querySelectorAll('.walk-detail').length,1);

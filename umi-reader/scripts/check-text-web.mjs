@@ -42,6 +42,7 @@ try {
     return {ok: true, json: async () => ({addresses: [{name: 'Wi-Fi', url: 'http://192.168.1.2:4173/'}]})};
   };
   w.addEventListener('error', event => errors.push(event.message));
+  w.localStorage.setItem('umi-progress-v1',JSON.stringify({sentenceMode:'words'}));
   const scripts = [...doc.querySelectorAll('script[src]')].map(script => script.getAttribute('src'));
   assert.equal(scripts[0], 'media-mode.js', 'Text-only mode loads before the application');
   for (const script of scripts) {

@@ -29,7 +29,7 @@ const negBook={words:[{s:'気がしなかった',b:'気がする',p:'固定表�
 assert.match(s.describe(s.create(negBook,negLine)[0]).definition,/不觉得/);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScripts:'outside-only'}),w=dom.window,d=w.document;
 w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:10,illustrations:false}));
+w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:10,illustrations:false,sentenceMode:'words'}));
 for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',f)))w.eval(read(f));
 const word=[...d.querySelectorAll('[data-select]')].find(e=>e.getAttribute('aria-label')==='查看 気もした');assert(word);word.click();
 const dialog=d.querySelector('#word-dialog');assert(dialog.open);assert.match(dialog.textContent,/気がする/);assert.match(dialog.textContent,/も替换が/);assert.match(dialog.textContent,/变时态的是する/);assert(dialog.querySelectorAll('details[open]').length>0);

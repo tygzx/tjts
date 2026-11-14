@@ -142,6 +142,17 @@
  function lessonsFor(keys){return [...new Set(keys||[])].map(k=>grammarLessons.get(k)).filter(Boolean);}
  function grammarTeaching(title){return lessonsFor(DATA.grammarTeaching?.titleKeys?.[title]||[]);}
  function walkthrough(book,line){return walkthroughs.get(line.t.map(i=>book.words[i].s).join(''))||null;}
+ function readingChunks(book,line,groups=create(book,line)){
+  const lesson=walkthrough(book,line);if(!lesson)return null;
+  let offset=0;const located=groups.map((g,index)=>{const start=offset;offset+=g.s.length;return {group:g,index,start,end:offset};});
+  const blocks=lesson.blocks.map(b=>{
+   const pieces=located.filter(x=>x.start>=b.start&&x.end<=b.end);
+   // A reviewed clause must align exactly. Never guess a reading across a cut word.
+   if(pieces.map(x=>x.group.s).join('')!==b.quote)return null;
+   return {...b,kana:pieces.map(x=>x.group.k||x.group.s).join(''),pieces};
+  });
+  return blocks.some(b=>!b)?null:{...lesson,blocks};
+ }
  const combinations=new Map((DATA.particleCombinations?.guides||[]).map(x=>[x.key,x]));
  const combinationContexts=new Map();
  for(const x of DATA.particleCombinations?.contexts||[]){if(!combinationContexts.has(x.jp))combinationContexts.set(x.jp,[]);combinationContexts.get(x.jp).push(x);}
@@ -348,5 +359,5 @@
    return m?[{at:m.index,quote:m[0],title,body}]:[];
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();
