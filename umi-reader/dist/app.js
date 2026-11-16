@@ -53,12 +53,12 @@
  }
  function chunkDetailedHTML(block){
   const d=block.detail;if(!d)return '';
-  return '<section class="chunk-deep-lesson"><h3>把这里的语法一步步讲清楚</h3><div class="chunk-structure"><small>方括号只是帮助看关系，没有改写小说</small><p lang="ja">'+esc(d.structure)+'</p></div><ol class="chunk-explanation-steps">'+d.parts.map((p,i)=>'<li data-chunk-focus="'+esc(p.quote)+'"><div class="chunk-step-heading"><span>'+(i+1)+'</span><h4>'+esc(p.title)+'</h4></div><p class="chunk-step-japanese" lang="ja">'+esc(p.quote)+'</p>'+formReadingHTML(p.quote,p.kana)+p.paragraphs.map(t=>'<p>'+esc(t)+'</p>').join('')+(p.forms.length?'<ol class="chunk-form-steps">'+p.forms.map((f,j)=>'<li><b lang="ja">'+esc(f.form)+'</b>'+formReadingHTML(f.form,f.kana,j===0)+'<p>'+esc(f.why)+'</p></li>').join('')+'</ol>':'')+'</li>').join('')+'</ol><div class="chunk-rebuild"><h4>最后连回一句中文</h4><p>'+esc(d.rebuild)+'</p></div></section>';
+  return '<section class="chunk-deep-lesson"><h3>把这里的语法一步步讲清楚</h3><div class="chunk-structure"><small>方括号只是帮助看关系，没有改写小说</small><p lang="ja">'+esc(d.structure)+'</p></div><ol class="chunk-explanation-steps">'+d.parts.map((p,i)=>'<li data-chunk-focus="'+esc(p.quote)+'"><div class="chunk-step-heading"><span>'+(i+1)+'</span><h4>'+esc(p.title)+'</h4></div><p class="chunk-step-japanese" lang="ja">'+esc(p.quote)+'</p><p class="chunk-step-meaning" lang="zh-CN">'+esc(p.meaning)+'</p>'+formReadingHTML(p.quote,p.kana)+p.paragraphs.map(t=>'<p>'+esc(t)+'</p>').join('')+(p.forms.length?'<ol class="chunk-form-steps">'+p.forms.map((f,j)=>'<li><b lang="ja">'+esc(f.form)+'</b>'+formReadingHTML(f.form,f.kana,j===0)+'<p>'+esc(f.why)+'</p></li>').join('')+'</ol>':'')+'</li>').join('')+'</ol><div class="chunk-rebuild"><h4>最后连回一句中文</h4><p>'+esc(d.rebuild)+'</p></div></section>';
  }
  function chunkConnectionNotesHTML(block){
   if(block.detail)return '';
   const notes=window.STUDY_GROUPS.chunkConnections(block);
-  return notes.length?'<section class="chunk-connection-notes"><h3>这些词之间怎样接起来</h3>'+notes.map(n=>'<article><h4>'+esc(n.title)+'</h4><p class="chunk-step-japanese" lang="ja">'+esc(n.quote)+'</p><p>'+esc(n.why)+'</p></article>').join('')+'</section>':'';
+  return notes.length?'<section class="chunk-connection-notes"><h3>合起来是什么意思</h3>'+notes.map(n=>'<article data-connection-quote="'+esc(n.quote)+'"><p class="chunk-step-japanese" lang="ja">'+esc(n.quote)+'</p><p class="chunk-connection-translation" lang="zh-CN">'+esc(n.meaning)+'</p><p class="chunk-connection-explanation">'+esc(n.why)+'</p></article>').join('')+'</section>':'';
  }
 
  function openSentenceChunk(n){
@@ -264,7 +264,7 @@
  function nextQuiz(){const round=currentQuiz(),q=round.questions[round.at];if(!q||!Object.hasOwn(round.answers,q.id)||round.finished)return;if(round.at===round.questions.length-1)round.finished=true;else round.at++;round.showHint=false;renderQuiz(true);}
 
  function walkDetailHTML(block,i){
-  return '<article class="walk-detail"><div class="walk-detail-heading"><span class="walk-number">'+(i+1)+'</span><h4>'+esc(block.role)+'</h4></div><p class="walk-quote" lang="ja">'+esc(block.quote)+'</p><p class="walk-meaning">'+esc(block.meaning)+'</p><p class="walk-explanation">'+esc(block.why)+'</p>'+chunkDetailedHTML(block)+groups.filter(g=>g.combination&&g.combination.start>=block.start&&g.combination.end<=block.end).map(g=>combinationHTML(g)).join('')+'</article>';
+  return '<article class="walk-detail"><div class="walk-detail-heading"><span class="walk-number">'+(i+1)+'</span><h4>'+esc(block.role)+'</h4></div><p class="walk-quote" lang="ja">'+esc(block.quote)+'</p><p class="walk-meaning">'+esc(block.meaning)+'</p><p class="walk-explanation">'+esc(block.why)+'</p>'+chunkDetailedHTML(block)+chunkConnectionNotesHTML(block)+groups.filter(g=>g.combination&&g.combination.start>=block.start&&g.combination.end<=block.end).map(g=>combinationHTML(g)).join('')+'</article>';
  }
  function walkHTML(){
   const lesson=window.STUDY_GROUPS.walkthrough(B,B.lines[state.index]);

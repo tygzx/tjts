@@ -228,14 +228,10 @@
   return {quote:g.s,base:'みたいだ',baseKana:'みたいだ',kind:'比喻表达的接法',lessonKeys:['mitai'],meaning:original.describe(g).definition,meaningLabel:'表达整体意思',steps:[step('みたい','先保留“像……／好像……”这一部分。它前面整块告诉你像什么，或根据什么事情作出判断。'),step(g.s,meanings[g.s])],warning:'みたい也可根据迹象推测，具体看本句；它和見たい（想看）读音相同，接法不同。'};
  }
  function chunkConnections(block){
-  const pieces=block.pieces,notes=[];
-  for(let i=0;i<pieces.length;i++){
-   const g=pieces[i].group,prev=pieces[i-1]?.group,next=pieces[i+1]?.group;
-   if(g.s==='の'&&g.p==='助词'&&prev?.p==='名词'&&next?.p==='名词')notes.push({quote:prev.s+'の'+next.s,title:'前面的名称怎样说明后面的名称',why:'先看右边的「'+next.s+'」，这里要说的东西落在它上面；前面的「'+prev.s+'の」说明是哪一种、谁的，或与什么有关。可以借中文“的”理解这个连接，但整块译成中文时不一定保留一个“的”。若前后还有描述，要把它们一起带上。'});
-   if(g.p==='形容词'&&g.s.endsWith('い')&&next?.p==='名词'&&g.s===original.describe(g).base)notes.push({quote:g.s+next.s,title:'描述特点的词，直接放在名称前面',why:'「'+g.s+'」说明后面的「'+next.s+'」是什么样。中文常在两者之间说“的”，这里日语保留最后的い，直接接后面的名称；不用再添の或な。这一块先合成一个意思，再接后文。'});
-   if(g.s==='な'&&prev&&next?.p==='名词'&&(prev.s.endsWith('的')||prev.words.some(w=>String(w.ct).includes('形容動詞'))))notes.push({quote:prev.s+'な'+next.s,title:'な把特点接到后面的名称',why:'先有「'+next.s+'」这个名称，再用「'+prev.s+'」说明它是什么样。这里靠な把两者接起来，像中文“……的'+next.s+'”。这个な是在块的中间连接两个部分，不是句末感叹，也不表示过去。'});
-  }
-  return notes;
+  // Only use phrase explanations reviewed inside this exact source block.
+  // Adjacent tokenizer pieces can be suffixes, names, or sentence endings;
+  // joining their dictionary glosses produces misleading "grammar".
+  return (block.connections||[]).filter(n=>block.quote.includes(n.quote));
  }
  function create(book,line){
   const text=line.t.map(id=>book.words[id].s).join(''),groups=combineParticles(feeling(original.create(book,line)),text),entry=reviewed.get(text);
