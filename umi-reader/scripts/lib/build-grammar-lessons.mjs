@@ -2,6 +2,7 @@ import {grammarLessons,grammarTitleKeys,grammarGlossary,grammarLessonReferences}
 import {grammarChineseGuides} from '../content/grammar-chinese-guide.mjs';
 import {godanPrimer} from '../content/godan-primer.mjs';
 import {grammarVariantGuides} from '../content/grammar-variant-guides.mjs';
+import {formContrastGuides} from '../content/form-contrast-guides.mjs';
 export function buildGrammarLessons(patterns,curated={}){
  const keys=new Set();
  for(const g of grammarLessons){
@@ -17,5 +18,5 @@ export function buildGrammarLessons(patterns,curated={}){
  for(const [key,guide] of Object.entries(grammarVariantGuides)){
   if(!keys.has(key)||!guide.title||!guide.intro||!guide.variants.length||guide.variants.some(v=>!v.form||!v.kana||!v.task||!v.example||!v.reading||!v.chinese||!v.explanation||!v.change))throw new Error('Incomplete grammar variants: '+key);
  }
- return {lessons:grammarLessons.map(g=>({...g,chineseGuide:grammarChineseGuides[g.key],variantGuide:grammarVariantGuides[g.key]})),titleKeys:grammarTitleKeys,glossary:grammarGlossary,godanPrimer,references:grammarLessonReferences};
+ return {lessons:grammarLessons.map(g=>({...g,chineseGuide:grammarChineseGuides[g.key],variantGuide:grammarVariantGuides[g.key],contrastGuide:formContrastGuides[g.key]})),titleKeys:grammarTitleKeys,glossary:grammarGlossary,godanPrimer,references:grammarLessonReferences};
 }

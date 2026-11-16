@@ -227,3 +227,13 @@
 .action-chinese{font-weight:600}.action-form-steps{padding-left:20px}.action-form-steps>li{margin:14px 0}.action-form-steps .form-pronunciation{margin-left:8px}.action-form-steps b{font-size:19px}
 .action-particle-reading{font-size:21px}.action-context{border-left:3px solid #93b7c7;padding-left:12px;line-height:1.9}.action-rebuild p{margin:6px 0 0}.action-recall{font-size:13px;line-height:1.8;color:#577483;margin-bottom:0}
 @media(max-width:600px){.action-lesson{padding:15px 12px}.action-source{font-size:21px}.action-parts{padding-left:20px}.action-form-steps{padding-left:17px}}
+
+/* Visible examples compare time, meaning and endings without opening a reference. */
+.form-contrast{margin:20px 0;padding:16px;border:1px solid #d4e3e9;border-radius:10px;background:#fbfdfe;overflow-wrap:anywhere}.form-contrast h4{font-size:16px;line-height:1.7;margin:0 0 12px}.form-contrast>p{line-height:1.9;margin:12px 0}.form-time{background:#edf5f8;border-radius:8px;padding:12px}
+.form-example-list{display:grid;gap:12px}.form-example{padding:12px 14px;border-left:3px solid #9bbcca;background:#fff;border-radius:4px}.form-example h5{color:#51788a;font-size:13px;margin:0 0 8px}.form-example p{margin:6px 0;line-height:1.8}.form-example-ja{font-size:19px}.form-example-zh{font-weight:600;color:#194f63}.form-example .form-pronunciation{display:flex;margin-left:0}.form-example-why{font-size:13px;color:#536f7d}.form-trap{font-size:13px}
+.form-change{margin:16px 0;padding:14px;background:#edf5f8;border-radius:8px;overflow-wrap:anywhere}.form-change h4{margin:0 0 10px}.form-change p[lang=ja]{font-size:25px;margin:8px 0}.form-change del{color:#8d4d37;text-decoration-thickness:2px}.form-change mark{color:#135269;background:#d6e9ee;border-radius:4px;padding:0 3px}.form-change-arrow{color:#6f8894}.form-change p:last-child{font-size:13px;line-height:1.8}
+@media(max-width:600px){.form-contrast{padding:12px}.form-example{padding:10px}.form-example-ja{font-size:18px}.form-change p[lang=ja]{font-size:22px}}
+
+/* Apply the rule to the actual passage, then reread the whole thought. */
+.grammar-application,.grammar-context-recap{margin:20px 0;padding:18px;border-radius:12px;background:#edf5f8;color:var(--ink,#193d4d);line-height:1.85}
+.grammar-application h4,.grammar-context-recap h4{margin:0 0 12px}.grammar-application .application-quote{font-size:1.15rem;margin:8px 0}.grammar-application .application-meaning{font-weight:650;margin:8px 0 16px}.grammar-application dt{font-weight:650;margin-top:14px}.grammar-application dd{margin:4px 0 0}.application-next{margin-top:14px;padding-top:12px;border-top:1px solid #d3e4eb}.application-next h5{margin:0}.grammar-context-recap .context-roles{font-size:.9rem;color:#476b7c}

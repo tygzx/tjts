@@ -21,6 +21,10 @@
   }
   if(candidates.size===1)return [...candidates][0];
   if(candidates.size>1)return '';
+  // Keep the reading of an unchanged noun in tokenized する compounds,
+  // including intermediate forms such as 仲裁し and 仲裁して.
+  const suruAt=words.findIndex(w=>w.b==='する'&&w.ct?.includes('サ変'));
+  if(suruAt>0){const head=words.slice(0,suruAt),prefix=head.map(w=>w.s).join(''),rest=form.slice(prefix.length);if(form.startsWith(prefix)&&head.every(w=>w.k)&&/^[\p{Script=Hiragana}ー]+$/u.test(rest))return head.map(w=>w.k).join('')+rest;}
   if(!readingIndexes.has(book)){const map=new Map();for(const w of book.words){if(!w.k)continue;if(!map.has(w.s))map.set(w.s,new Set());map.get(w.s).add(w.k);}readingIndexes.set(book,map);}
   const exact=readingIndexes.get(book).get(form);if(exact?.size===1)return [...exact][0];
   // A compound する verb may have a separate, unchanged noun token.
@@ -32,6 +36,15 @@
  const actionContexts=new Map();
  for(const a of DATA.actionConnections||[]){if(!actionContexts.has(a.jp))actionContexts.set(a.jp,[]);actionContexts.get(a.jp).push(a);}
  function actionConnections(book,line){return actionContexts.get(line.t.map(i=>book.words[i].s).join(''))||[];}
+ const makuruContexts=new Map((DATA.makuruAnalyses||[]).map(a=>[a.jp,a]));
+ const applicationContexts=new Map();
+ for(const a of DATA.contextApplications||[]){if(!applicationContexts.has(a.jp))applicationContexts.set(a.jp,[]);applicationContexts.get(a.jp).push(a);}
+ function formContrasts(keys=[]){return [...new Set(keys)].map(k=>DATA.formContrasts?.[k]).filter(Boolean);}
+ function formChange(a){
+  if(!a.base||a.base===a.quote||!a.steps?.some(s=>s.form===a.quote)||!a.steps.some(s=>s.form===a.base)||![/^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]+$/u].every(re=>re.test(a.base)&&re.test(a.quote)))return null;
+  let n=0;while(n<Math.min(a.base.length,a.quote.length)&&a.base[n]===a.quote[n])n++;
+  return {from:a.base,to:a.quote,keep:a.base.slice(0,n),remove:a.base.slice(n),add:a.quote.slice(n)};
+ }
  const grammarLessons=new Map((DATA.grammarTeaching?.lessons||[]).map(g=>[g.key,g]));
  function lessonsFor(keys){return [...new Set(keys||[])].map(k=>grammarLessons.get(k)).filter(Boolean);}
  function grammarTeaching(title){return lessonsFor(DATA.grammarTeaching?.titleKeys?.[title]||[]);}
@@ -120,6 +133,61 @@
   if(tail!=='する')steps.push(step(g.s,past?'最后把する换成した，就在说“那时候有这种感觉”。其中し＋た＝した；如果前面还用了も，就把“也”一起读进去。':neg?'する → しない，变成“不觉得”。如果写成しなかった，再把ない换成なかった，就是“当时不觉得”。':'把最后的する换成して，说明话还要往下接。'+(tail==='してきた'?'再接きた，整段说这种感觉渐渐出现了。':'')));
   return {quote:g.s,base:'気がする',steps,meaning:original.describe(g).definition,meaningLabel:'表达整体意思',lessonKeys:['feeling'],warning:'整个表达的基本形式是「気がする」，其中动词的词典形才是「する」。变化顺序用于帮助理解，并不是说说话时必须依次造出这些句子。',kind:'表达结构'};
  }
+ // Reconstruct only token-confirmed auxiliary chains. A matching substring is
+ // not enough: every new auxiliary must begin at an actual token boundary.
+ const teAuxiliaries=new Map([
+  ['いる','one','progressive','表示正在做，或动作后保持着的状态。不要只把いる译成“有人在”。'],
+  ['くる','come','approach','添上“来到这边”这一层；买东西时可说买了带回来，变化时可说逐渐出现。具体意思看本句。'],
+  ['来る','come','approach','添上“来到这边”这一层；也可说变化逐渐出现。来る读くる，来て读きて，来た读きた。'],
+  ['いく','go','away','添上“朝那边去／离开这里”，或“以后继续发展”的意思。'],
+  ['行く','go','away','添上“朝那边去／离开这里”，或“以后继续发展”的意思。'],
+  ['しまう','five','completion','添上做完，或不由得、遗憾等感受；到底是哪一种要看本句。'],
+  ['おく','five','preparation','表示先做好、准备好，或者让某种情况保持着。'],
+  ['みる','one','trial','表示试着做，不再是单独用眼睛“看”。'],
+  ['もらう','five','receive','表示得到别人做这件事的帮助；前面动作是谁做的，要看人物关系。'],
+  ['くれる','one','give','表示别人为我或我这一方做这件事。'],
+  ['あげる','one','give-out','表示为别人做这件事。'],
+  ['ある','five','result-state','表示有人做过之后，结果保持在那里；重点是留下的状态。']
+ ].map(([base,type,key,meaning])=>{
+  const stem=base.slice(0,-1);let te,past,ren,neg,vol,cond;
+  if(type==='come'){const h=base==='来る'?'来':'';te=h+'きて';past=h+'きた';ren=h+'き';neg=h+'こない';vol=h+'こよう';cond=h+'くれば';if(h){te='来て';past='来た';ren='来';neg='来ない';vol='来よう';cond='来れば';}}
+  else if(type==='one'){te=stem+'て';past=stem+'た';ren=stem;neg=stem+'ない';vol=stem+'よう';cond=stem+'れば';}
+  else{const endings=type==='go'?['って','った','き','か','こ','け']:{う:['って','った','い','わ','お','え'],く:['いて','いた','き','か','こ','け'],る:['って','った','り','ら','ろ','れ']}[base.at(-1)];[te,past,ren,neg,vol,cond]=[stem+endings[0],stem+endings[1],stem+endings[2],stem+endings[3]+'ない',stem+endings[4]+'う',stem+endings[5]+'ば'];if(base==='ある')neg='ない';}
+  const kana=form=>base==='来る'?({来る:'くる',来て:'きて',来た:'きた',来:'き',来ない:'こない',来なかった:'こなかった',来よう:'こよう',来れば:'くれば',来たら:'きたら',来ます:'きます',来ました:'きました',来ません:'きません',来ませんでした:'きませんでした'}[form]||''):base==='行く'?form.replace('行','い'):form;
+  const change=(to,join)=>type==='come'?`${base}要单独记：读くる，接${join}时变成き＋${join}。不是把る删掉后直接加${join}。`:type==='one'?`把最后的る去掉，保留${stem}，再加${join}：${base} → ${to}。`:`保留${stem}，把最后${base.at(-1)}换成${to.slice(stem.length)}：${base} → ${to}。${to.includes('っ')?'小っ在后面的音前停一拍，不读つ。':''}`;
+  return [base,{base,type,key,meaning,te,past,ren,neg,vol,cond,kana,change}];
+ }));
+ function teChain(g,firstTe,firstSteps){
+  let at=0;const tokens=g.words.map(w=>{const t={...w,start:at};at+=w.s.length;return t;});
+  const prefixKana=prefix=>{let count=0,k='';for(const w of tokens){count+=w.s.length;if(count>prefix.length)return '';k+=w.k||'';if(count===prefix.length)return k;}return '';};
+  function visit(prefix,steps,keys,depth){
+   if(depth>3||!g.s.startsWith(prefix))return null;
+   const token=tokens.find(w=>w.start===prefix.length),a=teAuxiliaries.get(token?.b);
+   if(!a||!token.ct||!['动词','助动词'].includes(token.p))return null;
+   const k=prefixKana(prefix),next=(form,why)=>({...step(prefix+form,why),kana:k&&a.kana(form)?k+a.kana(form):''});
+   const full=next(a.base,`前面的「${prefix}」已经接好，保留不动，再接「${a.base}」。${a.meaning}`);
+   const make=(form,why)=>next(form,why);
+   const teSteps=[full,make(a.te,a.change(a.te,'て')+`前面的「${prefix}」不再变一次；得到${prefix+a.te}，通常用来接后文。单独对人说时也可能是请求，要看后面有没有另一个动作。这个て本身不表示过去。`)];
+   const pastSteps=[full,make(a.past,a.change(a.past,'た')+'普通回忆中，这一步把整段动作或状态放到当时。')];
+   const forms=[
+    [a.base,[full],null],
+    [a.te,teSteps,'te'],
+    [a.past,pastSteps,'past'],
+    [a.ren,[full,make(a.ren,`${a.base}换成${a.ren}来连接后文。这不是一个已经结束的过去句。`)],'te'],
+    [a.neg,[full,make(a.neg,`${a.base} → ${a.neg}：否定的是新接上的这一层，不要重新改变前面的${prefix}。`)],'negative'],
+    [a.neg.slice(0,-1)+'かった',[full,make(a.neg,'先换成否定说法：'+a.neg+'。'),make(a.neg.slice(0,-1)+'かった','再把ない换成なかった，得到过去的否定。')],'negative-past'],
+    [a.cond,[full,make(a.cond,`${a.base} → ${a.cond}：把整段当作“如果……”的条件，继续找后面的结果。`)],'ba'],
+    [a.past+'ら',[full,make(a.past,a.change(a.past,'た')+'这里只是准备继续接ら，不能据此断定已经发生。'),make(a.past+'ら','再加ら，用整套たら说“如果……／等……之后”；时间还要看整句。')],'tara'],
+    [a.vol,[full,make(a.vol,`${a.base} → ${a.vol}：给整段动作加上打算、提议或推测，具体看这个词和语境。`)],'volitional']
+   ];
+   for(const ending of ['ます','ました','ません','ませんでした'])forms.push([a.ren+ending,[full,make(a.ren,`${a.base}换成${a.ren}，准备接礼貌结尾。`),make(a.ren+ending,{ます:'加ます，说得客气；本身不是正在做。',ました:'加ました，客气地说过去发生的事。',ません:'加ません，客气地否定。',ませんでした:'加ませんでした，客气地说过去没有。'}[ending])],'polite']);
+   const terminal=forms.find(([form])=>prefix+form===g.s);
+   if(terminal)return {surface:g.s,steps:[...steps,...terminal[1]],lessonKeys:[...new Set(['te-chain',...keys,a.key,...terminal[2]?[terminal[2]]:[]])],layered:true};
+   // A second helper is connected through the first helper's complete て form.
+   return visit(prefix+a.te,[...steps,...teSteps],[...keys,a.key],depth+1);
+  }
+  return visit(firstTe,firstSteps,[],1);
+ }
  function regular(g){
   if(g.p!=='动词'||g.rule==='reviewed-context'&&g.words.length===1&&!g.words[0].ct)return null;
   const base=original.describe(g).base;if(!base||base===g.s)return null;
@@ -154,7 +222,7 @@
   const targetForm=g.s===past||g.s===past+'ら'?past:te;
   const replaceEnding=ct.startsWith('五段')?`保留「${stem}」，把最后的「${base.at(-1)}」换成「${targetForm.slice(stem.length)}」：${base} → ${targetForm}。`:how;
   const connecting=step(te.slice(0,-1),ct==='一段'?`先去掉${base}最后的る，剩下${te.slice(0,-1)}。这一步只展示还没接完的部分。`:ct.includes('サ変')?`する在接${targetForm.at(-1)}时先写成し。这里还没接完，要和下一步的${targetForm.at(-1)}一起看。`:ct.includes('カ変')?'来る在接た／て时，来读き；这里展示还没接完的部分。':`${replaceEnding}这里单列「${te.slice(0,-1)}」只是为了展示变化，它不是另一个可以单独使用的词。${te.endsWith('って')?`小っ不读成つ（tsu）；读完整的${targetForm}时，在${targetForm.at(-1)}前短暂停一拍。`:te.endsWith('んで')?'词尾变成ん，再接だ／で；例如読む的过去写作読んだ。':te.slice(0,-1)===ren?'这个词接ます与接た之前，剩下的部分相同。':'这种词尾发音的变化叫“音变”，先记完整写法即可。'}`);
-  const pastStep=step(past,`${past.slice(0,-1)} ＋ ${past.at(-1)} ＝ ${past}。这就是完整的写法；在一般叙述中，可以用来讲过去做了什么或当时是什么状态。教材把这种写法叫“た形”。${base==='思う'?'思う是“想／认为”，思った在回顾中是“当时想／当时觉得”。':''}`);
+  const pastStep=step(past,`${past.slice(0,-1)} ＋ ${past.at(-1)} ＝ ${past}。${g.s===past+'ら'?'这一步是为了继续接ら，不能在这里就认定动作已经发生；要读完整个たら条件。':'在普通回忆里，这种写法把动作或状态放回当时；如果后面还接条件、建议等，要一起判断，不能见到た就自动翻“了”。'}教材把这种写法叫“た形”。${base==='思う'?'思う是“想／认为”，思った在回顾中是“当时想／当时觉得”。':''}`);
   add(te,[initial,connecting,teStep],'te');add(past,[initial,connecting,pastStep],'past');
   add(neg,[initial,step(neg,negHow+' ない增加否定意思：“不……”，它本身不是过去否定。')],'negative');
   add(neg.slice(0,-1)+'かった',[initial,step(neg,negHow),step(neg.slice(0,-1)+'かった','保留ない前面的部分，把ない的い换成かった：ない → なかった。这样得到“过去没有……”；不是把原动词先变た形再加ない。')],'negative-past');
@@ -186,12 +254,14 @@
     const head=derived.slice(0,-1),chain=[initial,step(derived.slice(0,-aux.length),`先把「${base}」改成「${derived.slice(0,-aux.length)}」，等着接下面的「${aux}」。这一截还没接完。${ct.includes('カ変')?'这里的来读こ。':''}`),step(derived,`${derived.slice(0,-aux.length)} ＋ ${aux} ＝ ${derived}。${causative?'现在多了“让别人做”的意思。谁要求或允许，谁真正做动作，要分别找出来。':'现在可能在说“被别人做”“自己能做”，也可能是在尊敬别人或说感受自然出现。先看前后人物关系，再选意思。'}接下来如果还要说“不、当时”等，就改这个新写法最后的る。`)];
     const voiceForms=[['',[],null],['た',[[head,'后接成分去最后的る，准备接た。'],[head+'た',`${head} ＋ た：把整个表达放到过去。`]],'past'],['て',[[head,'后接成分去最后的る。'],[head+'て','接て，准备连接后面的状态或动作。']],'te'],['ない',[[head+'ない','后接成分去る，加ない，否定整个表达。']],'negative'],['なかった',[[head+'ない','先去る，加ない，否定。'],[head+'なかった','ない变なかった，得到过去否定。']],'negative-past'],['ている',[[head+'て','后接成分去る＋て，把整个动作交给いる。'],[head+'ている','再接いる，表达这个动作的进行或结果状态。']],'progressive'],['ていた',[[head+'て','后接成分去る＋て，连接状态成分。'],[head+'ている','接いる，表示整个动作的进行或持续状态。'],[head+'ていた','いる→いた，把这种状态放到过去。']],'progressive'],['ていない',[[head+'ている','先用て形＋いる表示状态。'],[head+'ていない','いる→いない，否定这种状态。']],'progressive'],['ていて',[[head+'ている','先用て形＋いる表示状态。'],[head+'ていて','いる→いて，用て形继续连接后文。']],'progressive'],['ます',[[head+'ます','后接成分去る＋ます，成为礼貌非过去形式。']],'polite'],['ました',[[head+'ます','后接成分去る＋ます。'],[head+'ました','ます→ました，成为礼貌过去形式。']],'polite']];
     for(const [ending,steps,extra] of voiceForms)candidates.push({surface:ending?head+ending:derived,steps:[...chain,...steps.map(([f,w])=>step(f,w))],lessonKeys:[key,...extra?[extra]:[]]});
+    const extension=teChain(g,head+'て',[...chain,step(head+'て',`把新结尾${derived}的最后る换成て，得到${head+'て'}；接下来才接帮助、状态等下一层意思。`)]);
+    if(extension){extension.lessonKeys=[key,...extension.lessonKeys];candidates.push(extension);}
    }
   }
   // Only publish an explanation if its whole reconstructed form exactly matches.
-  const found=candidates.find(x=>x.surface===g.s);if(!found)return null;
+  const found=teChain(g,te,[initial,connecting,teStep])||candidates.find(x=>x.surface===g.s);if(!found)return null;
   const formTable=[['辞书形',base,'基本形式；非过去肯定'],['て形',te,'连接后项，本身不定时态'],['た形',past,'常表过去；也用于连接其他句型'],['ない形',neg,'非过去否定'],['过去否定',neg.slice(0,-1)+'かった','过去没做／当时不是这种状态'],['ます形',ren+'ます','礼貌的非过去肯定'],['意志／推量形',vol,volSense.includes('推测')?'常表达推测，需结合语境':'自己的打算／提议'],['ば条件形',cond,'如果……']].map(([label,form,meaning])=>({label,form,meaning}));
-  return {quote:g.s,base,steps:found.steps,meaning:original.describe(g).definition,meaningLabel:'词语意思（不等于完整语法）',kind:'常见活用拆解',lessonKeys:found.lessonKeys,verbClass,formTable,warning:'词形按词典类别与实际写法核对。下面的通用讲解不替代本句的语境判断；例句是教学示例，不是小说原文。'};
+  return {quote:g.s,base,steps:found.steps,meaning:original.describe(g).definition,meaningLabel:'词语意思（不等于完整语法）',kind:'常见活用拆解',layered:!!found.layered,lessonKeys:found.lessonKeys,verbClass,formTable,warning:'词形按词典类别与实际写法核对。下面的通用讲解不替代本句的语境判断；例句是教学示例，不是小说原文。'};
  }
  function adjectiveOrCopula(g){
   const base=original.describe(g).base;
@@ -238,17 +308,25 @@
   return (block.connections||[]).filter(n=>block.quote.includes(n.quote));
  }
  function create(book,line){
-  const text=line.t.map(id=>book.words[id].s).join(''),groups=combineParticles(feeling(original.create(book,line)),text),entry=reviewed.get(text),actions=actionContexts.get(text)||[];
+  const text=line.t.map(id=>book.words[id].s).join(''),groups=combineParticles(feeling(original.create(book,line)),text),entry=reviewed.get(text),actions=actionContexts.get(text)||[],walk=walkthroughs.get(text),applications=applicationContexts.get(text)||[];
   let offset=0;
   for(const g of groups){
    const start=offset;offset+=g.s.length;
    const details=(entry?.items||[]).filter(a=>a.start<offset&&a.end>start).map(a=>({...a,kind:'本句逐项讲解'}));
    const own=feelingAnalysis(g)||regular(g)||adjectiveOrCopula(g)||derivedNoun(g)||likenessForm(g);
-   const block=walkthroughs.get(text)?.blocks.find(x=>x.start<=start&&x.end>=offset);
-   const contextLesson=block?{quote:block.quote,meaning:block.meaning,why:block.why}:null;
+   const block=walk?.blocks.find(x=>x.start<=start&&x.end>=offset),blockIndex=walk?.blocks.indexOf(block);
+   const contextLesson=block?{quote:block.quote,meaning:block.meaning,why:block.why,whole:walk.spine,who:walk.who,source:text,next:walk.blocks[blockIndex+1]?{quote:walk.blocks[blockIndex+1].quote,meaning:walk.blocks[blockIndex+1].meaning}:null}:null;
    g.analyses=details.length?details.map(a=>({...a,meaningLabel:'本句理解',grammarLessons:lessonsFor(a.quote===g.s?own?.lessonKeys:[]),verbClass:a.quote===g.s?own?.verbClass:null,formTable:a.quote===g.s?own?.formTable:null})):own?[{...own,start,end:offset,contextLesson,grammarLessons:lessonsFor(own.lessonKeys)}]:[];
+   const makuru=makuruContexts.get(text);
+   if(makuru&&makuru.start<offset&&makuru.end>start)g.analyses.push({...makuru,contextLesson,grammarLessons:lessonsFor(makuru.lessonKeys)});
    g.baseKana=formReading(book,original.describe(g).base,g.words);
-   for(const a of g.analyses){a.baseKana=a.baseKana||formReading(book,a.base,g.words);a.steps=a.steps.map(s=>({...s,kana:s.kana||formReading(book,s.form,g.words)}));if(a.verbClass?.rows)a.verbClass={...a.verbClass,rows:a.verbClass.rows.map(r=>({...r,kana:formReading(book,r.form,g.words)}))};}
+   for(const a of g.analyses){
+    a.applications=applications.filter(n=>n.start<a.end&&n.end>a.start);
+    a.application=a.applications.find(n=>n.start<=start&&n.end>=offset)||a.applications[0]||null;
+    if(walk&&!a.contextLesson){const containing=walk.blocks.find(b=>b.start<=a.start&&b.end>=a.end);a.contextLesson=containing?{quote:containing.quote,meaning:containing.meaning,why:containing.why}:{quote:a.quote,meaning:a.meaning,why:walk.pitfall};}
+    if(a.contextLesson&&walk)a.contextLesson={...a.contextLesson,whole:walk.spine,who:walk.who,source:text};
+    a.change=formChange(a);a.baseKana=a.baseKana||formReading(book,a.base,g.words);a.steps=a.steps.map(s=>({...s,kana:s.kana||formReading(book,s.form,g.words)}));if(a.verbClass?.rows)a.verbClass={...a.verbClass,rows:a.verbClass.rows.map(r=>({...r,kana:formReading(book,r.form,g.words)}))};
+   }
    g.particleKeys=particleKeys(g,details);
    // Repeat the same basics at each reviewed occurrence; never suppress because
    // another sentence was read or because the particle has no conjugation.
@@ -281,5 +359,5 @@
    return [...source.matchAll(new RegExp(pattern,'g'))].filter(m=>valid(m,title)).map(m=>({at:m.index,quote:m[0],title,body}));
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,chunkConnections,actionConnections,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,chunkConnections,actionConnections,formContrasts,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();

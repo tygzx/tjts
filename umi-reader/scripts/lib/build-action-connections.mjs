@@ -1,4 +1,5 @@
 import {actionConnectionLessons} from '../content/action-connection-lessons.mjs';
+import {actionContrastKeys} from '../content/form-contrast-guides.mjs';
 
 const step=(form,why)=>({form,kana:form,why});
 function verbSteps(x){
@@ -32,7 +33,7 @@ function verbSteps(x){
   'してから':[base,shi,te,step('してから','して＋から：做完这件事以后，再做后面的事。')],
   'すべき':[base,step('すべき','する接べき可以写するべき，也可以缩成すべき，意思是“应该做”。不是“已经做了”。')],
   'したらしい':[base,shi,past,step('したらしい','した＋らしい：看来做过了。这里是从房间状况作推测，不是亲眼看见整个过程。')],
-  'しまくった':[base,shi,step('しまくる','し＋まくる：不停地、使劲地做。本句是大量买东西。'),step('しまくった','まくる的最后る接た时变った：大买特买了一番。不是しまった，不能当成“做完／不小心”。')],
+  'しまくった':[base,shi,step('しまくる','し＋まくる＝不停地、使劲地做。这里先加“大量反复”的意思，还没有变成过去。'),step('しまくっ','保留前面的しまく。まくる属于五段这一组，接た时最后る换成小っ；这是中间一步，不是完整的词。'),step('しまくった','再加た：しまく＋っ＋た＝しまくった。这里在回忆，所以是“大买特买了一番”。小っ不读つ，而是在た前停一拍。不是しまった，也不是把る直接删掉写成しまくた。')],
   'されて':[base,passive,passiveTe],
   'されていて':[base,passive,passiveTe,passiveIng,step('されていて','最后いる换成いて，继续说明后面的情况。')],
   'されてる':[base,passive,passiveTe,passiveIng,step('されてる','口语省掉されている中、紧挨て后面的い；被别人议论的方向没有变。')],
@@ -65,6 +66,6 @@ export function buildActionConnections(book,rows=actionConnectionLessons){
    passive:'を读作お（o）。它标出别人做出的“'+x.nounMeaning+'”；后面的される再说明这件事是由别人施加的。不是把を直接翻译成“被”。'
   }[x.sense];
   const recall=x.sense==='action'?'再遇到时，先看を前面做的是什么，再看后面的结尾有没有“了、正在、如果、应该”等意思。':x.sense==='passive'?'再遇到される，先分清谁在做、谁承受；不要把被别人做的事读成自己主动做。':'再遇到这套说法，先把外貌、打扮或感受和する合起来理解，再看结尾怎样变化。';
-  return {...x,jp,quote,start,end,particleStart,verbStart,nounKana,relation,steps:verbSteps(x),recall};
+  return {...x,jp,quote,start,end,particleStart,verbStart,nounKana,relation,steps:verbSteps(x),contrastKeys:actionContrastKeys(x.form),recall};
  });
 }

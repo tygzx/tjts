@@ -3,7 +3,7 @@ import {buildGrammarLessons} from './lib/build-grammar-lessons.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),read=f=>fs.readFileSync(path.join(root,'dist',f),'utf8'),c={window:{}};
 for(const f of ['book.js','grammar.js','study-morphology.js','study-expressions.js','study-groups.js'])vm.runInNewContext(read(f),c);
 const b=c.window.BOOK,s=c.window.STUDY_GROUPS,before=JSON.stringify(b),lessons=buildGrammarLessons(c.window.GRAMMAR,c.window.CURATED);
-assert.equal(lessons.lessons.length,73);
+assert.equal(lessons.lessons.length,75);
 for(const lesson of lessons.lessons){
  assert(lesson.chineseGuide?.chinese&&lesson.chineseGuide.japanese&&lesson.chineseGuide.watch,'Chinese-first explanation for '+lesson.key);
  assert(!/前项|后项|非过去肯定|未然形|连用形|谓语|词干|语态/.test(Object.values(lesson.chineseGuide).join('')),'Do not require grammar terminology before explaining '+lesson.key);
@@ -55,7 +55,8 @@ assert.equal(popup.querySelector('.grammar-verb-class').open,false,'Taxonomy is 
 assert([...popup.querySelectorAll('.grammar-reference')].every(el=>!el.open),'Formal rules are folded by default');
 const visibleOrder=popup.querySelector('.form-analysis').innerHTML;
 assert(visibleOrder.indexOf('grammar-in-context')<visibleOrder.indexOf('analysis-base'),'Actual sentence meaning comes first');
-assert(visibleOrder.indexOf('chinese-first-guide')<visibleOrder.indexOf('一步一步怎么变'),'Explain the purpose before asking readers to transform words');
+assert(visibleOrder.indexOf('grammar-in-context')<visibleOrder.indexOf('一步一步怎么变'),'Explain the sentence meaning before asking readers to transform words');
+assert(visibleOrder.indexOf('一步一步怎么变')<visibleOrder.indexOf('chinese-first-guide'),'Show the clicked word steps before the longer general lessons');
 const reference=popup.querySelector('.grammar-reference');reference.querySelector('summary').click();assert(reference.open);assert.match(reference.textContent,/具体接法/);
 const table=popup.querySelector('.grammar-form-table');table.querySelector('summary').click();assert(table.open);assert.equal(table.querySelectorAll('tbody tr').length,8);
 const terms=popup.querySelector('.grammar-glossary');terms.querySelector('summary').click();assert(terms.open);assert.match(terms.textContent,/普通形不等于只有原形/);
