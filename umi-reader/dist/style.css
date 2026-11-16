@@ -218,3 +218,12 @@
 
 /* Put a complete Chinese meaning directly under each explained phrase. */
 .chunk-connection-notes .chunk-step-japanese{margin-bottom:6px}.chunk-connection-translation,.chunk-step-meaning{color:var(--ink,#153f53);font-weight:600;background:#edf5f8;border-radius:8px;padding:10px 12px;margin:0 0 12px;line-height:1.65}.chunk-connection-explanation{line-height:1.9;overflow-wrap:anywhere}.chunk-connection-notes article{padding-bottom:16px}.chunk-connection-notes article:last-child{padding-bottom:0}
+
+/* A complete particle + action reminder stays visible at every occurrence. */
+.action-lesson{margin:20px 0;padding:20px;border:1px solid #d4e3e9;border-radius:12px;background:#fbfdfe;overflow-wrap:anywhere}
+.action-lesson h3{margin:0 0 16px;font-size:17px}.action-source{font-size:24px;line-height:1.7;margin:8px 0;font-family:var(--jp-font,serif)}
+.action-source b{background:#e2eff4;border-radius:5px;padding:0 .18em}.action-meaning,.action-rebuild{background:#edf5f8;padding:12px 14px;border-radius:8px;color:#194f63}
+.action-meaning{margin-top:6px;font-size:18px}.action-parts{padding-left:24px;margin:22px 0}.action-parts>li{padding-left:5px;margin-bottom:22px}.action-parts h4{margin:0 0 10px}.action-parts p{margin:8px 0;line-height:1.9}
+.action-chinese{font-weight:600}.action-form-steps{padding-left:20px}.action-form-steps>li{margin:14px 0}.action-form-steps .form-pronunciation{margin-left:8px}.action-form-steps b{font-size:19px}
+.action-particle-reading{font-size:21px}.action-context{border-left:3px solid #93b7c7;padding-left:12px;line-height:1.9}.action-rebuild p{margin:6px 0 0}.action-recall{font-size:13px;line-height:1.8;color:#577483;margin-bottom:0}
+@media(max-width:600px){.action-lesson{padding:15px 12px}.action-source{font-size:21px}.action-parts{padding-left:20px}.action-form-steps{padding-left:17px}}

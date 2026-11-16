@@ -29,6 +29,9 @@
  }
  const reviewed=new Map(DATA.sentences.map(s=>[s.jp,s]));
  const walkthroughs=new Map((DATA.walkthroughs||[]).map(s=>[s.jp,s]));
+ const actionContexts=new Map();
+ for(const a of DATA.actionConnections||[]){if(!actionContexts.has(a.jp))actionContexts.set(a.jp,[]);actionContexts.get(a.jp).push(a);}
+ function actionConnections(book,line){return actionContexts.get(line.t.map(i=>book.words[i].s).join(''))||[];}
  const grammarLessons=new Map((DATA.grammarTeaching?.lessons||[]).map(g=>[g.key,g]));
  function lessonsFor(keys){return [...new Set(keys||[])].map(k=>grammarLessons.get(k)).filter(Boolean);}
  function grammarTeaching(title){return lessonsFor(DATA.grammarTeaching?.titleKeys?.[title]||[]);}
@@ -40,7 +43,8 @@
    const pieces=located.filter(x=>x.start>=b.start&&x.end<=b.end);
    // A reviewed clause must align exactly. Never guess a reading across a cut word.
    if(pieces.map(x=>x.group.s).join('')!==b.quote)return null;
-   return {...b,kana:pieces.map(x=>x.group.k||x.group.s).join(''),pieces};
+   const actionLessons=actionConnections(book,line).filter(a=>a.start<b.end&&a.end>b.start);
+   return {...b,kana:pieces.map(x=>x.group.k||x.group.s).join(''),pieces,actionLessons};
   });
   return blocks.some(b=>!b)?null:{...lesson,blocks};
  }
@@ -234,7 +238,7 @@
   return (block.connections||[]).filter(n=>block.quote.includes(n.quote));
  }
  function create(book,line){
-  const text=line.t.map(id=>book.words[id].s).join(''),groups=combineParticles(feeling(original.create(book,line)),text),entry=reviewed.get(text);
+  const text=line.t.map(id=>book.words[id].s).join(''),groups=combineParticles(feeling(original.create(book,line)),text),entry=reviewed.get(text),actions=actionContexts.get(text)||[];
   let offset=0;
   for(const g of groups){
    const start=offset;offset+=g.s.length;
@@ -246,6 +250,9 @@
    g.baseKana=formReading(book,original.describe(g).base,g.words);
    for(const a of g.analyses){a.baseKana=a.baseKana||formReading(book,a.base,g.words);a.steps=a.steps.map(s=>({...s,kana:s.kana||formReading(book,s.form,g.words)}));if(a.verbClass?.rows)a.verbClass={...a.verbClass,rows:a.verbClass.rows.map(r=>({...r,kana:formReading(book,r.form,g.words)}))};}
    g.particleKeys=particleKeys(g,details);
+   // Repeat the same basics at each reviewed occurrence; never suppress because
+   // another sentence was read or because the particle has no conjugation.
+   g.actionLessons=actions.filter(a=>a.start<offset&&a.end>start);
   }
   return groups;
  }
@@ -274,5 +281,5 @@
    return [...source.matchAll(new RegExp(pattern,'g'))].filter(m=>valid(m,title)).map(m=>({at:m.index,quote:m[0],title,body}));
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,chunkConnections,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,chunkConnections,actionConnections,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();
