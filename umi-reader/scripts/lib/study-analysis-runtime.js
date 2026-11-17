@@ -43,6 +43,10 @@
  for(const a of DATA.plainExplanations||[]){if(!plainContexts.has(a.jp))plainContexts.set(a.jp,[]);plainContexts.get(a.jp).push(a);}
  function plainExplanation(book,line,quote){return plainContexts.get(line.t.map(i=>book.words[i].s).join(''))?.find(n=>n.quote===quote)||null;}
  function plainPattern(key){return DATA.plainPatterns?.[key]||null;}
+ const sentencePatternContexts=new Map();
+ for(const n of DATA.sentencePatternExplanations||[]){if(!sentencePatternContexts.has(n.jp))sentencePatternContexts.set(n.jp,[]);sentencePatternContexts.get(n.jp).push(n);}
+ function sentencePatternLessons(book,line){return sentencePatternContexts.get(line.t.map(i=>book.words[i].s).join(''))||[];}
+ function sentencePatternLesson(book,line,quote){const notes=sentencePatternLessons(book,line),exact=notes.find(n=>n.quote===quote);if(exact)return exact;const contained=notes.filter(n=>quote.includes(n.quote));return contained.length===1?contained[0]:null;}
  function formContrasts(keys=[]){return [...new Set(keys)].map(k=>DATA.formContrasts?.[k]).filter(Boolean);}
  function formChange(a){
   if(!a.base||a.base===a.quote||!a.steps?.some(s=>s.form===a.quote)||!a.steps.some(s=>s.form===a.base)||![/^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]+$/u].every(re=>re.test(a.base)&&re.test(a.quote)))return null;
@@ -316,6 +320,7 @@
   let offset=0;
   for(const g of groups){
    const start=offset;offset+=g.s.length;
+   g.sentenceLesson=sentencePatternContexts.get(text)?.find(n=>n.start<offset&&n.end>start)||null;
    const details=(entry?.items||[]).filter(a=>a.start<offset&&a.end>start).map(a=>({...a,kind:'本句逐项讲解'}));
    const own=feelingAnalysis(g)||regular(g)||adjectiveOrCopula(g)||derivedNoun(g)||likenessForm(g);
    const block=walk?.blocks.find(x=>x.start<=start&&x.end>=offset),blockIndex=walk?.blocks.indexOf(block);
@@ -365,5 +370,5 @@
    return [...source.matchAll(new RegExp(pattern,'g'))].filter(m=>valid(m,title)).map(m=>({at:m.index,quote:m[0],title,body}));
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,plainExplanation,plainPattern,chunkConnections,actionConnections,formContrasts,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,plainExplanation,plainPattern,sentencePatternLesson,sentencePatternLessons,chunkConnections,actionConnections,formContrasts,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();

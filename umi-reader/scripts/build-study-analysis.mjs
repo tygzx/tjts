@@ -9,6 +9,7 @@ import {buildActionConnections} from './lib/build-action-connections.mjs';
 import {buildFormContrasts,buildMakuruAnalyses} from './lib/build-form-contrasts.mjs';
 import {buildContextApplications} from './content/context-applications.mjs';
 import {buildPlainExplanations,plainPatterns} from './content/plain-explanations.mjs';
+import {buildSentencePatternExplanations} from './content/sentence-pattern-explanations.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const data=JSON.parse(fs.readFileSync(path.join(root,'data/grammar-analysis.json'),'utf8')),c={window:{}};
 vm.runInNewContext(fs.readFileSync(path.join(root,'dist/book.js'),'utf8'),c);
@@ -19,6 +20,11 @@ data.makuruAnalyses=buildMakuruAnalyses(c.window.BOOK);
 data.contextApplications=buildContextApplications(c.window.BOOK);
 data.plainExplanations=buildPlainExplanations(c.window.BOOK);
 data.plainPatterns=plainPatterns;
+data.sentencePatternExplanations=buildSentencePatternExplanations(c.window.BOOK);
+for(const lesson of data.sentencePatternExplanations){
+ const block=data.walkthroughs.find(w=>w.jp===lesson.jp)?.blocks.find(b=>b.quote===lesson.quote);
+ if(block)block.meaning=lesson.meaning;
+}
 data.particleCombinations=buildParticleCombinations(c.window.BOOK);
 vm.runInNewContext(fs.readFileSync(path.join(root,'dist/grammar.js'),'utf8'),c);
 data.grammarTeaching=buildGrammarLessons(c.window.GRAMMAR,c.window.CURATED);

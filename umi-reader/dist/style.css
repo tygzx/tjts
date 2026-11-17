@@ -253,3 +253,15 @@
 .plain-more{border-top:1px solid var(--line);padding:14px 0;margin-top:16px}.plain-more>summary{color:var(--blue);font-size:14px;cursor:pointer;line-height:1.6}.plain-more[open]>summary{margin-bottom:16px}
 .plain-more .analysis-reference-body>.grammar-in-context{margin-top:12px}
 @media(max-width:600px){.plain-parts li{grid-template-columns:1fr;gap:2px;padding:10px 0}.plain-parts li>b{max-width:100%}.plain-forms p[lang=ja]{font-size:18px}.plain-meaning{padding:12px}.plain-meaning p{font-size:17px}}
+
+
+/* Five-part sentence explanations, with examples immediately followed by Chinese. */
+.sentence-pattern-lesson{font-size:15px;line-height:1.9;overflow-wrap:anywhere}
+.sentence-pattern-lesson h3{font-size:17px;line-height:1.7;margin:26px 0 12px;color:var(--ink,#183b4d)}
+.sentence-pattern-lesson p{margin:10px 0}.sentence-pattern-lesson .pattern-source{font-size:23px;line-height:1.8}
+.sentence-pattern-lesson .pattern-meaning{background:#edf5f8;padding:12px 14px;border-radius:8px;font-weight:600}
+.pattern-words,.pattern-structure{padding-left:22px;margin:10px 0 20px}.pattern-words li,.pattern-structure li{margin:10px 0;padding-left:3px}.pattern-words b{font-size:17px}
+.pattern-example-label{font-weight:600}.pattern-example{border-left:3px solid #a5c2ce;padding:5px 14px;margin:12px 0}.pattern-example p{margin:4px 0}.pattern-example p[lang=ja]{font-size:18px}.pattern-example p[lang=zh-CN]{color:#416473}
+.pattern-recall{background:#edf5f8;border-radius:9px;padding:14px 16px;margin-top:24px}.pattern-recall h3{font-size:15px;margin:0 0 8px}.pattern-recall p{margin:0;font-weight:600}
+.sentence-pattern-card summary small{line-height:1.7;max-width:100%}
+@media(max-width:600px){.sentence-pattern-lesson h3{font-size:16px}.sentence-pattern-lesson{font-size:14px}.pattern-words,.pattern-structure{padding-left:18px}.pattern-example{padding-left:10px}.pattern-example p[lang=ja]{font-size:17px}}
