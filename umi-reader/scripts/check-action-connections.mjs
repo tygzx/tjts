@@ -49,7 +49,8 @@ for(const native of [false,true]){
  const click=s=>{const el=d.querySelector(s);assert(el,s);el.click();};
  const jump=n=>{d.querySelector('#jump-number').value=String(n);d.querySelector('#jump').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));};
  click('[data-sentence-chunk="3"]');let a=d.querySelector('#word-dialog .action-lesson');assert(a);
- assert(!a.closest('details'),'Basic explanations are not hidden as optional notes');
+ const brief=d.querySelector('#word-dialog .action-brief');assert(brief&&!brief.closest('details'),'The short source-specific explanation stays visible');assert.match(brief.textContent,/大多数事情都做了/);assert.match(brief.textContent,/を读作お/);
+ assert(a.closest('details')&&!a.closest('details').open,'The full lesson is available on demand');a.closest('details').querySelector('summary').click();assert(a.closest('details').open);
  assert.equal(a.querySelector('.action-source').nextElementSibling.textContent,'大多数事情都做了');
  assert.match(a.textContent,/を → お o/);assert.match(a.textContent,/不是保留す、只删る/);
  assert.deepEqual([...a.querySelectorAll('.action-form-steps b')].map(n=>n.textContent),['する','し','した']);

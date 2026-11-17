@@ -39,6 +39,10 @@
  const makuruContexts=new Map((DATA.makuruAnalyses||[]).map(a=>[a.jp,a]));
  const applicationContexts=new Map();
  for(const a of DATA.contextApplications||[]){if(!applicationContexts.has(a.jp))applicationContexts.set(a.jp,[]);applicationContexts.get(a.jp).push(a);}
+ const plainContexts=new Map();
+ for(const a of DATA.plainExplanations||[]){if(!plainContexts.has(a.jp))plainContexts.set(a.jp,[]);plainContexts.get(a.jp).push(a);}
+ function plainExplanation(book,line,quote){return plainContexts.get(line.t.map(i=>book.words[i].s).join(''))?.find(n=>n.quote===quote)||null;}
+ function plainPattern(key){return DATA.plainPatterns?.[key]||null;}
  function formContrasts(keys=[]){return [...new Set(keys)].map(k=>DATA.formContrasts?.[k]).filter(Boolean);}
  function formChange(a){
   if(!a.base||a.base===a.quote||!a.steps?.some(s=>s.form===a.quote)||!a.steps.some(s=>s.form===a.base)||![/^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]+$/u].every(re=>re.test(a.base)&&re.test(a.quote)))return null;
@@ -321,6 +325,8 @@
    if(makuru&&makuru.start<offset&&makuru.end>start)g.analyses.push({...makuru,contextLesson,grammarLessons:lessonsFor(makuru.lessonKeys)});
    g.baseKana=formReading(book,original.describe(g).base,g.words);
    for(const a of g.analyses){
+    a.plain=plainExplanation(book,line,g.s)||plainExplanation(book,line,a.quote);
+    if(a.plain){a.plainBase=original.describe(g).base;a.plainBaseKana=g.baseKana;}
     a.applications=applications.filter(n=>n.start<a.end&&n.end>a.start);
     a.application=a.applications.find(n=>n.start<=start&&n.end>=offset)||a.applications[0]||null;
     if(walk&&!a.contextLesson){const containing=walk.blocks.find(b=>b.start<=a.start&&b.end>=a.end);a.contextLesson=containing?{quote:containing.quote,meaning:containing.meaning,why:containing.why}:{quote:a.quote,meaning:a.meaning,why:walk.pitfall};}
@@ -359,5 +365,5 @@
    return [...source.matchAll(new RegExp(pattern,'g'))].filter(m=>valid(m,title)).map(m=>({at:m.index,quote:m[0],title,body}));
   }).sort((a,b)=>a.at-b.at);
  }
- window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,chunkConnections,actionConnections,formContrasts,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
+ window.STUDY_GROUPS=Object.freeze({...original,create,analyses,grammarHints,walkthrough,readingChunks,plainExplanation,plainPattern,chunkConnections,actionConnections,formContrasts,formReading,grammarTeaching,grammarGlossary:()=>DATA.grammarTeaching?.glossary||[],godanPrimer:()=>DATA.grammarTeaching?.godanPrimer||null,grammarLessonReferences:()=>DATA.grammarTeaching?.references||[],particleHandbook:()=>DATA.particleHandbook||[],particlePrinciples:()=>DATA.particlePrinciples||[],particleReferences:()=>DATA.references||[]});
 })();

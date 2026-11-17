@@ -36,7 +36,7 @@ for(const native of [false,true]){
  const click=s=>{const el=d.querySelector(s);assert(el,s);el.click();};
  const jump=n=>{d.querySelector('#jump-number').value=String(n);d.querySelector('#jump').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));};
  click('[data-sentence-chunk="5"]');let cards=d.querySelectorAll('#word-dialog [data-form-contrast="makuru"]');assert.equal(cards.length,1,'Same examples appear once per chunk, repeat on other visits');
- assert(!cards[0].closest('details'));assert.equal(cards[0].querySelectorAll('.form-example').length,6);
+ const reference=cards[0].closest('details');assert(reference&&!reference.open,'Long examples are optional after the concise explanation');reference.querySelector('summary').click();assert(reference.open);assert.equal(cards[0].querySelectorAll('.form-example').length,6);
  for(const e of cards[0].querySelectorAll('.form-example')){assert(e.querySelector('.form-example-ja').nextElementSibling.matches('.form-example-zh'));assert(e.querySelector('.form-pronunciation small').textContent);}
  assert.equal(d.querySelectorAll('#word-dialog [data-form-reading="しまくっ"]').length,0,'Do not read an unfinished small-tsu stem');
  click('#word-dialog [data-close]');click('[data-sentence-mode="words"]');click('[aria-label="查看 しまくった"]');
@@ -44,7 +44,7 @@ for(const native of [false,true]){
  let edit=d.querySelector('#word-dialog .form-change');assert(edit);assert.equal(edit.querySelector('del').textContent,'る');assert.equal(edit.querySelector('mark').textContent,'った');
  click('#word-dialog [data-close]');click('[data-tab="walk"]');click('[data-walk-step="5"]');assert(d.querySelector('#walk-details [data-form-contrast="makuru"]'));
  click('[data-tab="grammar"]');assert(d.querySelector('#learning-panel [data-form-contrast="makuru"]'));
- jump(17);click('[data-sentence-mode="chunks"]');click('[data-sentence-chunk="1"]');const stateGuide=d.querySelector('#word-dialog [data-form-contrast="progressive"]');assert(stateGuide);assert(!stateGuide.closest('details'),'Examples remain visible even in a deeply annotated chunk');
+ jump(17);click('[data-sentence-mode="chunks"]');click('[data-sentence-chunk="1"]');const stateGuide=d.querySelector('#word-dialog [data-form-contrast="progressive"]');assert(stateGuide);assert(!stateGuide.closest('details').open,'Detailed examples remain available but folded in a deeply annotated chunk');
  click('#word-dialog [data-close]');jump(19);click('[data-sentence-chunk="5"]');assert.equal(d.querySelectorAll('#word-dialog [data-form-contrast="makuru"] .form-example').length,6,'Reading again must repeat examples');
  click('#word-dialog [data-close]');click('[data-tab="quiz"]');assert.equal(d.querySelectorAll('#learning-panel .form-contrast,#learning-panel .form-change').length,0);
  assert.deepEqual(JSON.parse(native?saved:w.localStorage.getItem('umi-progress-v1')).done,[0,18]);assert.deepEqual(errors,[]);dom.window.close();

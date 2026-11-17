@@ -237,3 +237,19 @@
 /* Apply the rule to the actual passage, then reread the whole thought. */
 .grammar-application,.grammar-context-recap{margin:20px 0;padding:18px;border-radius:12px;background:#edf5f8;color:var(--ink,#193d4d);line-height:1.85}
 .grammar-application h4,.grammar-context-recap h4{margin:0 0 12px}.grammar-application .application-quote{font-size:1.15rem;margin:8px 0}.grammar-application .application-meaning{font-weight:650;margin:8px 0 16px}.grammar-application dt{font-weight:650;margin-top:14px}.grammar-application dd{margin:4px 0 0}.application-next{margin-top:14px;padding-top:12px;border-top:1px solid #d3e4eb}.application-next h5{margin:0}.grammar-context-recap .context-roles{font-size:.9rem;color:#476b7c}
+
+
+/* Short explanations first; full references remain available on demand. */
+.plain-explanation,.plain-rule{line-height:1.85;font-size:15px;overflow-wrap:anywhere}
+.plain-explanation h4,.plain-rule h4{font-size:14px;margin:18px 0 8px}
+.plain-meaning{background:#edf5f8;border-radius:9px;padding:14px 16px;margin:14px 0}
+.plain-meaning h4{font-size:13px;margin:0 0 7px;color:#547582}.plain-meaning p{font-size:18px;font-weight:600;margin:0;line-height:1.7}
+.plain-meaning .plain-source{font-size:15px;font-weight:400;margin-bottom:8px}
+.plain-parts{padding:0;list-style:none;margin:10px 0 18px}.plain-parts li{display:grid;grid-template-columns:minmax(95px,auto) 1fr;gap:8px 16px;padding:10px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.plain-parts li>b{font-size:18px;font-weight:500;max-width:230px}.plain-parts li>span{font-size:15px;min-width:0}
+.plain-forms{border-left:3px solid #9dbfce;padding:0 0 0 14px;margin:18px 0}.plain-forms h4{margin:0 0 10px}.plain-forms p{margin:4px 0 12px}.plain-forms p[lang=ja]{font-size:19px;margin:10px 0 3px}
+.plain-link{line-height:1.85;font-size:15px;margin:18px 0}.plain-tip{font-size:14px;color:#526b77;line-height:1.8;margin:12px 0}
+.plain-rule{margin:14px 0}.plain-rule p{margin:5px 0}.plain-word-change{font-size:22px;line-height:1.7;margin:14px 0;overflow-wrap:anywhere}
+.plain-more{border-top:1px solid var(--line);padding:14px 0;margin-top:16px}.plain-more>summary{color:var(--blue);font-size:14px;cursor:pointer;line-height:1.6}.plain-more[open]>summary{margin-bottom:16px}
+.plain-more .analysis-reference-body>.grammar-in-context{margin-top:12px}
+@media(max-width:600px){.plain-parts li{grid-template-columns:1fr;gap:2px;padding:10px 0}.plain-parts li>b{max-width:100%}.plain-forms p[lang=ja]{font-size:18px}.plain-meaning{padding:12px}.plain-meaning p{font-size:17px}}

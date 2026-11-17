@@ -23,10 +23,10 @@ const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost:4173/',runScri
 w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
 w.localStorage.setItem('umi-progress-v1',JSON.stringify({index:20,illustrations:false,sentenceMode:'words'}));
 for(const f of ['book.js','wanakana.min.js','grammar.js','lesson-notes.js','playback.js','illustrations.js','sentence-art.js','sentence-illustrations.js','role-audio.js','learning-audio.js','chinese-emotion.js','study-morphology.js','study-expressions.js','study-groups.js','sentence-quiz.js','web-tools.js','app.js'])if(fs.existsSync(path.join(root,'dist',f)))w.eval(read(f));
-d.querySelector('[data-tab="walk"]').click();assert.match(d.querySelector('.walk-spine').textContent,/内层取钱的是母亲/);
+d.querySelector('[data-tab="walk"]').click();assert.match(d.querySelector('.walk-spine').textContent,/去银行取钱的是母亲/);
 assert.equal(d.querySelectorAll('.walk-chunk').length,4);assert.equal(d.querySelectorAll('.walk-detail').length,1);
 assert(d.querySelector('.jp-token.walk-focus'));
-d.querySelector('.walk-chunk[data-walk-step="2"]').click();assert.match(d.querySelector('.walk-detail').textContent,/将整项动作当作对象/);assert.equal(d.querySelector('.walk-chunk[aria-pressed="true"]').dataset.walkStep,'2');
+d.querySelector('.walk-chunk[data-walk-step="2"]').click();assert.match(d.querySelector('.walk-detail').textContent,/动作合成“这件事”/);assert.equal(d.querySelector('.walk-chunk[aria-pressed="true"]').dataset.walkStep,'2');
 assert.equal(d.activeElement.dataset.walkStep,'2','Keyboard focus remains on selected block');
 d.querySelector('[data-walk-all]').click();assert.equal(d.querySelectorAll('.walk-detail').length,4);
 d.querySelector('[data-tab="words"]').click();assert.equal(d.querySelectorAll('.walk-focus').length,0);assert(d.querySelector('.word-row'));
