@@ -25,6 +25,23 @@ for(const native of [false,true]){
  assert.match(d.querySelector('#word-dialog .word-zoom-text').textContent,/歩いて/);assert(d.querySelector('#word-dialog .sentence-pattern-lesson'));assert.equal(current().index,24);
  assert.equal(w.readerBack(),true);assert(!d.querySelector('dialog[open]'));assert(d.querySelector('#novel-flow'));
  const backup=w.UMI_WEB.decode(w.UMI_WEB.encode(current(),B.lines.length),B.lines.length);assert.equal(backup.readingMode,'novel');assert.equal(backup.novelRuby,true);assert.deepEqual(JSON.parse(JSON.stringify(backup.novelPosition)),{line:24,offset:0});
+ // A lookup may combine raw dictionary pieces. Both the stem and its suffix
+ // must highlight exactly the expression in the popup, never an adjacent word.
+ const surface=el=>{const copy=el.cloneNode(true);copy.querySelectorAll('rt').forEach(rt=>rt.remove());return copy.textContent;};
+ const highlighted=kind=>[...d.querySelectorAll('.novel-word-'+kind)].map(surface).join('');
+ for(const [line,phrase] of [[1,'ふんだ'],[1,'ついた'],[1,'というか'],[1,'合格して'],[1,'東京'],[0,'戻ってゆく']]){
+  const start=text(line).indexOf(phrase),end=start+phrase.length;assert(start>=0);
+  const pieces=[...d.querySelectorAll('[data-novel-line="'+line+'"]')].filter(el=>Number(el.dataset.novelOffset)>=start&&Number(el.dataset.novelOffset)<end);
+  assert.equal(pieces.map(surface).join(''),phrase);
+  for(const piece of new Set([pieces[0],pieces.at(-1)])){
+   piece.dispatchEvent(new w.Event('pointerover',{bubbles:true}));assert.equal(highlighted('hovered'),phrase,'Hover includes the suffix: '+phrase);
+   piece.dispatchEvent(new w.Event('pointerout',{bubbles:true}));assert.equal(highlighted('hovered'),'');
+   piece.click();assert.equal(d.querySelector('#word-dialog .word-zoom-text').textContent,phrase);
+   assert.equal(highlighted('selected'),phrase,'Click and popup select the same expression: '+phrase);
+   assert.equal(w.readerBack(),true);assert.equal(highlighted('selected'),phrase,'Selection remains visible when the popup closes');
+  }
+ }
+ checkParagraphs();click('[data-novel-action="larger"]');assert.equal(highlighted('selected'),'');click('[data-novel-action="smaller"]');
  // Cover every original paragraph without manufacturing or dropping text at section boundaries.
  if(!native){let total=d.querySelectorAll('[data-novel-paragraph]').length;for(let i=1;i<B.sections.length;i++){click('[data-novel-action="contents"]');click('[data-novel-section="'+i+'"]');checkParagraphs();total+=d.querySelectorAll('[data-novel-paragraph]').length;assert.equal(current().index,B.sections[i].start);}assert.equal(total,B.lines.length);}
  click('[data-novel-action="exit"]');assert(!d.body.classList.contains('novel-mode'));assert(d.querySelector('.sentence-card'));assert.equal(current().ruby,true);assert.equal(current().romaji,true);assert.equal(current().sentenceMode,'chunks');assert.deepEqual(current().done,[0,1,19]);assert.deepEqual(current().sentencePlayback,{24:{mode:'ja',count:0,pause:3}});
@@ -51,4 +68,4 @@ for(const native of [false,true]){
  reader.turn(1);reader.turn(1);assert.equal(state.index,10);reader.turn(-1);assert.equal(state.index,8,'Previous section opens at its last page');
  reader.leave();assert.equal(exitLine,8);reader.destroy();dom.window.close();
 }
-console.log(JSON.stringify({novelReader:'PASS',sourceParagraphs:2640,webAndNative:true,lookup:true,independentPreferences:true,backups:true,measuredPageNavigation:true,progressPreserved:true}));
+console.log(JSON.stringify({novelReader:'PASS',sourceParagraphs:2640,webAndNative:true,lookup:true,wholeExpressionHighlight:true,suffixClicks:true,independentPreferences:true,backups:true,measuredPageNavigation:true,progressPreserved:true}));

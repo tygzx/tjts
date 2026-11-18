@@ -31,6 +31,18 @@
   const result=window.STUDY_GROUPS.create(B,line);
   result.forEach((g,i)=>{g.r=wanakana.toRomaji(g.k)||'（促音停顿）';g.i=i;});return result;
  }
+ // Resolve hover and click against the same expression boundaries. Build only
+ // the paragraph being inspected, not every paragraph in a reading section.
+ let novelWordCache=null;
+ function novelWordAt(line,offset){
+  if(novelWordCache?.line!==line){
+   let start=0;
+   const words=makeGroups(B.lines[line]);
+   novelWordCache={line,words,ranges:words.map(g=>{const range={g,start,end:start+g.s.length};start=range.end;return range;})};
+  }
+  const found=novelWordCache.ranges.find(r=>offset>=r.start&&offset<r.end);
+  return found?{...found,words:novelWordCache.words}:null;
+ }
  function meaningHTML(g){
   if(!state.meaning)return '';
   const {definition}=window.STUDY_GROUPS.describe(g);
@@ -455,6 +467,6 @@
  function learningSettingsHTML(){if(textOnly)return '';const indices=new Set([...Object.keys(window.LEARNING_AUDIO?.chinese||{}),...Object.keys(window.CHINESE_EMOTION?.clips||{})]),completed=[...indices].map(Number).filter(i=>Number.isInteger(i)&&i>=0&&i<B.lines.length&&chineseRoleFor(i)).length,grammar=Object.keys(window.LEARNING_AUDIO?.grammar||{}).filter(grammarAudioFor).length;return `<label class="settings-label">中文情感配音</label><p class="hint">已完成 ${completed} / ${B.lines.length} 句。已完成的句子会优先播放新的中文配音，和日文共用“对比原版”开关；其余句子仍可听原版中文录音。中文内容与页面参考译文逐字对应。</p><label class="settings-label">语法与助词讲解</label><p class="hint">${grammar?`已有 ${grammar} 条语法讲解录音。`:'讲解录音正在准备。'}在语法笔记里点“听讲解”，先听日文句型或助词，再听中文解释。讲解只播放一遍；点“停止讲解”、上方“停止朗读”，或切换句子都可停止。</p>`;}
  function openSettings(){if(textOnly){dialog('settings-dialog','学习设置',`<p class="drawer-subtitle">此版本不含音频和插图。</p>${webSettingsHTML()}<label class="settings-label">给初学者的小提示</label><div class="source-note">先看日文和假名，试着自己读，再打开中文参考。熟悉假名后可以关掉罗马音。点击日文可查看词语解释与内部构成，使用句子测验检查理解。<br><br>全书 ${B.lines.length} 个原文行均可学习，一行可能包含多个句号。中文机器参考译文、自动词义与句型提示未经逐句人工审校，专名与方言需结合上下文核对。<br><br>阅读位置与显示偏好自动保存在当前浏览器中。</div>`);return;}dialog('settings-dialog','朗读与学习设置',`<p class="drawer-subtitle">${native?'正文、学习资料与双语音频保存在应用里。':'沿用 App 的正文、插画与双语录音，打开就能继续读。'}</p>${webSettingsHTML()}${roleSettingsHTML()}${learningSettingsHTML()}<label class="settings-label">原版朗读</label><p class="hint">日文：Nanami · 中文：晓晓。使用神经网络合成声音，保留句子停顿和语气起伏。建议先用 1.0× 听自然语调，再放慢跟读。</p><div class="settings-row"><button class="primary" id="test-voice">${icon('audio')}试听日文</button></div><label class="settings-label">逐句插图</label><p class="hint">已完成 ${sentenceArtCount()} / ${B.lines.length} 张，优先显示与当前原文一致的独立插图。未完成的句子若已有场景插画，则继续显示场景图。新图会分批加入；网页版刷新后加载，安卓 App 随安装包更新。</p><label class="settings-label">场景插画</label><p class="hint">开篇第 1–${window.ILLUSTRATIONS.coveredLines} 句已绘制 ${window.ILLUSTRATIONS.scenes.length} 个场景。相邻几句共用同一画面，点插画可放大，也可收起。人物和公寓采用固定参考设定；这是辅助阅读的原创 AI 插画，并非原书官方插图。</p><label class="settings-label">循环跟读</label><p class="hint">点“∞ 无限循环”即可重复播放当前这一句，也可在下面设置朗读顺序、次数和停顿，该句会单独记住设置。“日文 → 中文”先读原文，再读页面显示的中文参考。按停止、切换句子或离开应用都会结束循环。</p><label class="settings-label">给初学者的小提示</label><div class="source-note">先听一句，再看假名；试着自己读，最后打开中文参考。熟悉假名后可以关掉罗马音。<br><br>词语按原句顺序排列。全书 ${B.lines.length} 个原文行均可学习；一行可能包含多个句号。词语释义已按全书学习分组校订；“开篇 · 初到东京”第 1–173 句中文已对照日文重校。后续整句中文仍包含机器参考，句型提示也需结合上下文核对。<br><br>语音为合成朗读，不是真人有声书；声音的语气不代表原作者的表演指导。中文音频和显示的参考译文一致。阅读位置和每句循环设置自动保存。</div>`);}
 
- novelReader=window.createNovelReader?.({book:B,getState:()=>state,save,showDialog:dialog,lookup:(line,offset)=>{stop();state.index=line;groups=makeGroups(B.lines[line]);let at=0;const g=groups.find(g=>{const start=at;at+=g.s.length;return offset>=start&&offset<at;});save();if(g)openWord(g.i);},exit:line=>{stop();state.index=line;state.readingMode='study';selected=-1;quizRound=null;walkAt=0;save();render();window.scrollTo(0,0);}});
+ novelReader=window.createNovelReader?.({book:B,getState:()=>state,save,showDialog:dialog,wordRange:(line,offset)=>{const word=novelWordAt(line,offset);return word?{start:word.start,end:word.end}:null;},lookup:(line,offset)=>{const word=novelWordAt(line,offset);if(!word)return;stop();state.index=line;groups=word.words;save();openWord(word.g.i);},exit:line=>{stop();state.index=line;state.readingMode='study';selected=-1;quizRound=null;walkAt=0;save();render();window.scrollTo(0,0);}});
  render();
 })();

@@ -1,7 +1,7 @@
 /* Quiet vertical reading. All text comes from the same local book as study mode. */
 (()=>{
  'use strict';
- window.createNovelReader=function({book,getState,save,lookup,exit,showDialog}){
+ window.createNovelReader=function({book,getState,save,lookup,wordRange,exit,showDialog}){
   const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const source=i=>book.lines[i].t.map(n=>book.words[n].s).join('');
   let root=null,flow=null,stage=null,observer=null,scrollTimer=0,resizeFrame=0,sectionIndex=0,paragraphs=[],pageWidth=0,anchor=null,lookupLine=null,layoutRunning=false;
@@ -20,10 +20,31 @@
     const w=book.words[n],start=offset;offset+=w.s.length;
     if(w.p==='标点')return escape(w.s);
     const surface=characters(w.s),reading=state().novelRuby&&/[\p{Script=Han}]/u.test(w.s)?'<ruby>'+surface+'<rt>'+escape(w.k)+'</rt></ruby>':surface;
-    return '<span class="novel-word" role="button" tabindex="0" data-novel-line="'+index+'" data-novel-offset="'+start+'" aria-label="查看 '+escape(w.s)+'" aria-haspopup="dialog">'+reading+'</span>';
+    return '<span class="novel-word" role="button" tabindex="0" data-novel-line="'+index+'" data-novel-offset="'+start+'" data-novel-end="'+offset+'" aria-label="查看 '+escape(w.s)+'" aria-haspopup="dialog">'+reading+'</span>';
    }).join('');
    return '<p data-novel-paragraph="'+index+'"'+(/^[「『]/u.test(source(index))?' class="novel-dialogue"':'')+'>'+text+'</p>';
   }
+  // Highlight the same learning expression as lookup, including every raw
+  // tokenizer piece (e.g. ふん + だ). Keep the existing vertical text and ruby.
+  function rangeOf(word){
+   const line=Number(word.dataset.novelLine),offset=Number(word.dataset.novelOffset);
+   return {line,...(wordRange?.(line,offset)||{start:offset,end:Number(word.dataset.novelEnd)})};
+  }
+  function highlight(range,className){
+   if(!flow)return;
+   flow.querySelectorAll('.'+className).forEach(el=>el.classList.remove(className));
+   if(!range)return;
+   const p=flow.querySelector('[data-novel-paragraph="'+range.line+'"]');
+   p?.querySelectorAll('[data-novel-offset]').forEach(el=>{
+    if(Number(el.dataset.novelOffset)<range.end&&Number(el.dataset.novelEnd)>range.start)el.classList.add(className);
+   });
+  }
+  function clearHighlights(){highlight(null,'novel-word-hovered');highlight(null,'novel-word-selected');}
+  function previewWord(e){
+   const word=e.target.closest?.('[data-novel-line]');
+   highlight(word&&flow.contains(word)?rangeOf(word):null,'novel-word-hovered');
+  }
+  function endPreview(){highlight(null,'novel-word-hovered');}
   function visibleAnchor(){
    if(!flow||!pageWidth)return anchor;
    const box=flow.getBoundingClientRect();
@@ -57,7 +78,7 @@
   }
   function scrollChanged(){
    if(layoutRunning)return;
-   lookupLine=null;updateNavigation();clearTimeout(scrollTimer);scrollTimer=setTimeout(remember,150);
+   clearHighlights();lookupLine=null;updateNavigation();clearTimeout(scrollTimer);scrollTimer=setTimeout(remember,150);
   }
   function layout(target=anchor){
    if(!flow||!stage)return;
@@ -100,7 +121,7 @@
   }
   function turn(direction){
    if(!flow)return;
-   clearTimeout(scrollTimer);lookupLine=null;
+   clearTimeout(scrollTimer);clearHighlights();lookupLine=null;
    const distance=Math.abs(flow.scrollLeft),travel=Math.max(0,flow.scrollWidth-flow.clientWidth);
    if(direction===1&&travel-distance<2){goSection(sectionIndex+1);return;}
    if(direction===-1&&distance<2){goSection(sectionIndex-1,true);return;}
@@ -131,7 +152,9 @@
    }
    const word=e.target.closest('[data-novel-line]');
    if(word&&!window.getSelection()?.toString()){
-    clearTimeout(scrollTimer);remember();lookupLine=Number(word.dataset.novelLine);lookup(lookupLine,Number(word.dataset.novelOffset));
+    clearTimeout(scrollTimer);remember();lookupLine=Number(word.dataset.novelLine);
+    const range=rangeOf(word);highlight(null,'novel-word-hovered');highlight(range,'novel-word-selected');
+    lookup(lookupLine,Number(word.dataset.novelOffset));
    }
   }
   function keydown(e){
@@ -150,6 +173,8 @@
    document.removeEventListener('click',click);document.removeEventListener('keydown',keydown);document.removeEventListener('visibilitychange',hide);
    window.removeEventListener('resize',resize);window.removeEventListener('pagehide',remember);
    flow?.removeEventListener('scroll',scrollChanged);flow?.removeEventListener('wheel',wheel);
+   flow?.removeEventListener('pointerover',previewWord);flow?.removeEventListener('pointerout',endPreview);
+   flow?.removeEventListener('focusin',previewWord);flow?.removeEventListener('focusout',endPreview);
    root=null;flow=null;stage=null;paragraphs=[];pageWidth=0;
   }
   function mount(container){
@@ -157,6 +182,8 @@
    container.innerHTML='<main class="novel-reader" aria-label="轻小说竖排阅读"><header class="novel-top"><div class="novel-book-name" lang="ja">海がきこえる</div><div class="novel-tools"><button data-novel-action="contents">目录</button><div class="novel-font-controls" role="group"><button data-novel-action="smaller" aria-label="缩小字号">字−</button><button data-novel-action="larger" aria-label="放大字号">字＋</button></div><button data-novel-action="ruby" aria-pressed="false">注音</button><button data-novel-action="exit" class="novel-exit">逐句学习</button></div></header><div class="novel-running-head"><span class="novel-section-name"></span><span>氷室冴子</span></div><div class="novel-stage"><article id="novel-flow" class="novel-flow" lang="ja" aria-label="小说正文（从右往左读）" tabindex="0"></article></div><footer class="novel-footer"><div class="novel-progress"><span></span></div><div class="novel-pagination"><button data-novel-action="next">← 下一页</button><div><span id="novel-page-status" role="status" aria-live="polite"></span><small>点词查解释 · 向右滑动翻阅</small></div><button data-novel-action="prev">上一页 →</button></div></footer></main>';
    root=container.querySelector('.novel-reader');flow=root.querySelector('#novel-flow');stage=root.querySelector('.novel-stage');
    redraw();flow.addEventListener('scroll',scrollChanged,{passive:true});flow.addEventListener('wheel',wheel,{passive:false});
+   flow.addEventListener('pointerover',previewWord);flow.addEventListener('pointerout',endPreview);
+   flow.addEventListener('focusin',previewWord);flow.addEventListener('focusout',endPreview);
    document.addEventListener('click',click);document.addEventListener('keydown',keydown);document.addEventListener('visibilitychange',hide);
    window.addEventListener('resize',resize);window.addEventListener('pagehide',remember);
    if(window.ResizeObserver){observer=new ResizeObserver(resize);observer.observe(stage);}

@@ -18,7 +18,7 @@ body.novel-mode{background:#f6f2e9;color:#34312c;overflow:hidden}
 .novel-flow p.novel-dialogue{text-indent:0}
 .novel-end-space{height:100%;width:0;padding:0;margin:0;pointer-events:none}
 .novel-word{display:inline;padding:0;margin:0;border:0;border-radius:2px;background:none;color:inherit;cursor:pointer;text-decoration:none;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.novel-word:hover{background:#e8deca}
+.novel-word-hovered,.novel-word-selected{background:#e8deca}
 .novel-word ruby{ruby-position:over;ruby-align:center}
 .novel-word rt{font-size:.46em;letter-spacing:0;color:#8b7d68;font-weight:400}
 .novel-tcy{text-combine-upright:all;letter-spacing:0}
