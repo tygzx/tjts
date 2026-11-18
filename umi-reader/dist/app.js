@@ -254,23 +254,25 @@
   const reading=part.kana?'<small class="pattern-part-reading" lang="ja">'+esc(part.kana)+'</small>':'';
   return '<b lang="ja">'+esc(part.ja)+'</b>'+reading;
  }
- function patternPartExplanation(part){
-  const explanation='<p class="pattern-part-meaning" lang="zh-CN">'+esc(part.zh)+'</p>';
-  if(!part.forms?.length)return explanation;
-  const steps=part.forms.map(step=>'<li><b lang="ja">'+esc(step.ja)+'</b>'+formReadingHTML(step.ja,step.kana)+'<p lang="zh-CN">'+esc(step.zh)+'</p></li>');
-  return explanation+'<ol class="pattern-forms" aria-label="接法与变形">'+steps.join('')+'</ol>';
+ function patternPartDetails(part){
+  const points=part.points?.map(point=>'<li><b lang="ja">'+esc(point.ja)+'</b> <span>'+esc(point.zh)+'</span></li>')||[];
+  const steps=part.forms?.map(step=>'<li><b lang="ja">'+esc(step.ja)+'</b>'+formReadingHTML(step.ja,step.kana)+'<p lang="zh-CN">'+esc(step.zh)+'</p></li>')||[];
+  return (points.length?'<ul class="pattern-points">'+points.join('')+'</ul>':'')+
+   (steps.length?'<ol class="pattern-forms" aria-label="接法与变形">'+steps.join('')+'</ol>':'');
  }
  function wordPatternFocusHTML(part,surface){
-  const label=part.ja===surface?'':'<p class="pattern-part-source">'+patternPartLabel(part)+'</p>';
-  return '<section class="word-pattern-focus" aria-label="本句用法"><h3>本句用法</h3>'+label+patternPartExplanation(part)+'</section>';
+  const label=part.ja===surface?'':patternPartLabel(part)+' ';
+  return '<section class="word-pattern-focus study-prose" aria-label="本句用法"><h3>本句用法</h3>'+
+   '<p class="pattern-part-source">'+label+'<span lang="zh-CN">'+esc(part.zh)+'</span></p>'+
+   patternPartDetails(part)+'</section>';
  }
  function sentencePatternHTML(n,showMeaning=true){
   const p=n.pattern;
   const meaning=showMeaning?'<p class="pattern-source" lang="ja">'+esc(n.quote)+'</p><p class="pattern-meaning">'+esc(n.meaning)+'</p>':'';
-  const words=n.parts.map(part=>'<li>'+patternPartLabel(part)+patternPartExplanation(part)+'</li>').join('');
-  const structure=p.structure.map(([ja,zh])=>'<li><b>'+esc(ja)+'</b><p class="pattern-part-meaning">'+esc(zh)+'</p></li>').join('');
+  const words=n.parts.map(part=>'<li>'+patternPartLabel(part)+' <span class="pattern-part-meaning" lang="zh-CN">'+esc(part.zh)+'</span>'+patternPartDetails(part)+'</li>').join('');
+  const structure=p.structure.map(([ja,zh])=>'<li><b>'+esc(ja)+'</b> <span class="pattern-part-meaning">'+esc(zh)+'</span></li>').join('');
   const examples=p.examples.map(e=>'<div class="pattern-example"><p lang="ja">'+esc(e.ja)+'</p><p lang="zh-CN">'+esc(e.zh)+'</p></div>').join('');
-  return '<section class="sentence-pattern-lesson" data-pattern-quote="'+esc(n.quote)+'">'+meaning+
+  return '<section class="sentence-pattern-lesson study-prose" data-pattern-quote="'+esc(n.quote)+'">'+meaning+
    '<h3>1. 逐词解析</h3><ul class="pattern-words">'+words+'</ul>'+
    '<h3>2. 核心句型 · <span>'+esc(p.title)+'</span></h3><p>'+esc(p.meaning)+'</p>'+
    '<ul class="pattern-structure">'+structure+'</ul><p class="pattern-example-label">对照例句</p>'+examples+
@@ -283,7 +285,7 @@
  }
  function plainExplanationHTML(n,showMeaning=true){
   if(!n)return '';
-  return '<section class="plain-explanation" data-plain-quote="'+esc(n.quote)+'">'+(showMeaning?'<div class="plain-meaning"><h4>这句里是什么意思</h4><p>'+esc(n.meaning)+'</p></div>':'')+'<h4>拆开看</h4><ul class="plain-parts">'+n.parts.map(p=>'<li><b lang="ja">'+esc(p.ja)+'</b><span>'+esc(p.zh)+'</span></li>').join('')+(n.forms?.length?'<div class="plain-forms"><h4>怎么变过来的</h4>'+n.forms.map(f=>'<p lang="ja">'+esc(f.ja)+'</p><p>'+esc(f.zh)+'</p>').join('')+'</div>':'')+'<p class="plain-link"><b>合起来：</b>'+esc(n.link)+'</p>'+(n.tip?'<p class="plain-tip">'+esc(n.tip)+'</p>':'')+'</section>';
+  return '<section class="plain-explanation study-prose" data-plain-quote="'+esc(n.quote)+'">'+(showMeaning?'<div class="plain-meaning"><h4>这句里是什么意思</h4><p>'+esc(n.meaning)+'</p></div>':'')+'<h4>拆开看</h4><ul class="plain-parts">'+n.parts.map(p=>'<li><b lang="ja">'+esc(p.ja)+'</b><span>'+esc(p.zh)+'</span></li>').join('')+(n.forms?.length?'<div class="plain-forms"><h4>怎么变过来的</h4>'+n.forms.map(f=>'<p lang="ja">'+esc(f.ja)+'</p><p>'+esc(f.zh)+'</p>').join('')+'</div>':'')+'<p class="plain-link"><b>合起来：</b>'+esc(n.link)+'</p>'+(n.tip?'<p class="plain-tip">'+esc(n.tip)+'</p>':'')+'</section>';
  }
  function plainRuleHTML(g){
   const brief=window.STUDY_GROUPS.plainPattern(g.key);
@@ -316,7 +318,7 @@
   if(n)return plainExplanationHTML(n,false);
   // Reuse only reviewed phrase translations, never join dictionary glosses.
   const parts=block.detail?.parts||window.STUDY_GROUPS.chunkConnections(block);
-  return (parts.length?'<section class="plain-explanation"><h4>拆开看</h4><ul class="plain-parts">'+parts.map(p=>'<li><b lang="ja">'+esc(p.quote)+'</b><span>'+esc(p.meaning)+'</span></li>').join('')+'</ul></section>':'')+'<p class="plain-link chunk-dialog-connection">'+esc(block.why)+'</p>'+actionBriefHTML(block.actionLessons||window.STUDY_GROUPS.actionConnections(B,B.lines[state.index]).filter(a=>a.start<block.end&&a.end>block.start));
+  return (parts.length?'<section class="plain-explanation study-prose"><h4>拆开看</h4><ul class="plain-parts">'+parts.map(p=>'<li><b lang="ja">'+esc(p.quote)+'</b><span>'+esc(p.meaning)+'</span></li>').join('')+'</ul></section>':'')+'<p class="plain-link chunk-dialog-connection">'+esc(block.why)+'</p>'+actionBriefHTML(block.actionLessons||window.STUDY_GROUPS.actionConnections(B,B.lines[state.index]).filter(a=>a.start<block.end&&a.end>block.start));
  }
  function analysisReferenceHTML(a,open=false,excluded=null){
   const isContext=a.kind==='本句逐项讲解',ctx=a.contextLesson;

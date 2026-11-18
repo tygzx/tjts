@@ -1,7 +1,7 @@
 /* Personal lookup history and practice. Stored with reading progress on this device. */
 (()=>{
  'use strict';
- const threshold=3;
+ const threshold=9;
  const noteLimit=2000;
  const key=(s,k)=>encodeURIComponent(s.normalize('NFKC'))+'|'+encodeURIComponent(k.normalize('NFKC'));
  const integer=(v,max=100000000)=>Number.isInteger(v)&&v>=0?Math.min(v,max):0;
@@ -44,6 +44,9 @@
  window.UMI_VOCABULARY=Object.freeze({threshold,noteLimit,key,active,clean,visit,master,answer,resolve});
  window.createVocabularyNotebook=function({book,getState,save,showDialog,openSource,stop}){
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const markdown=typeof window.markdownit==='function'
+   ? window.markdownit({html:false,linkify:false,breaks:true}).disable(['image','link','autolink'])
+   : null;
   const entries=()=>getState().vocabulary;
   const find=id=>entries().find(e=>key(e.s,e.k)===id);
   const text=line=>book.lines[line].t.map(n=>book.words[n].s).join('');
@@ -54,12 +57,53 @@
   function persist(){const saved=save()!==false;if(saved)unsavedNotes.clear();return saved;}
   function changed(){persist();updateBadges();}
   function control(e){
-   return '<div class="vocab-word-control" data-vocab-control="'+esc(key(e.s,e.k))+'"><div class="vocab-word-actions"><button class="outline '+(active(e)?'vocab-marked':'')+'" data-vocab-action="toggle" data-vocab-key="'+esc(key(e.s,e.k))+'" aria-pressed="'+active(e)+'">'+(active(e)?'已加入 · 移出复习':'不熟悉，加入生词本')+'</button><button class="vocab-link" data-vocab-action="open">生词本</button></div><small>已查 '+e.lookups+' 次'+(e.pinned?' · 手动加入复习':active(e)?' · 反复查词，已自动加入':' · '+(e.masteredAt?'移出后再查 3 次，会重新加入':'查满 3 次自动加入复习'))+'</small></div>';
+   const inReview=active(e);
+   let reviewMessage='查满 '+threshold+' 次自动加入复习';
+   if(e.pinned)reviewMessage='手动加入复习';
+   else if(inReview)reviewMessage='反复查词，已自动加入';
+   else if(e.masteredAt)reviewMessage='移出后再查 '+threshold+' 次，会重新加入';
+   const wordKey=esc(key(e.s,e.k));
+   return '<div class="vocab-word-control" data-vocab-control="'+wordKey+'">'+
+    '<div class="vocab-word-actions"><button class="outline '+(inReview?'vocab-marked':'')+'" data-vocab-action="toggle" data-vocab-key="'+wordKey+'" aria-pressed="'+inReview+'">'+(inReview?'已加入 · 移出复习':'不熟悉，加入生词本')+'</button>'+
+    '<button class="vocab-link" data-vocab-action="open">生词本</button></div>'+
+    '<small>已查 '+e.lookups+' 次 · '+reviewMessage+'</small></div>';
   }
   function record(line,offset,g,count=true){const e=visit(entries(),line,offset,g,count);changed();return control(e);}
+  function renderNote(note){
+   if(!note.trim())return '<p class="vocab-note-empty">还没有笔记。</p>';
+   return markdown?markdown.render(note):'<p class="vocab-note-plain">'+esc(note)+'</p>';
+  }
   function noteEditor(e,expanded=false){
-   const note=e.note||'',id='vocab-note-'+(++noteId),unsaved=unsavedNotes.has(key(e.s,e.k));
-   return '<details class="vocab-note-editor" '+(expanded&&note.trim()?'open':'')+'><summary><span>我的笔记</span><small data-note-summary>'+(note.trim()?'已写笔记':'写下自己的理解')+'</small></summary><div class="vocab-note-body"><label class="screen-only" for="'+id+'">我的笔记：'+esc(e.s)+'</label><textarea id="'+id+'" data-vocab-note="'+esc(key(e.s,e.k))+'" rows="4" maxlength="'+noteLimit+'" spellcheck="false" placeholder="写下自己的理解、记忆方法，或还没弄懂的地方…">'+esc(note)+'</textarea><div class="vocab-note-footer"><span data-note-status role="status" aria-live="polite" class="'+(unsaved?'note-save-error':'')+'">'+(unsaved?'未能保存，请先复制笔记或重试':note?'已保存到本机':'输入后自动保存到本机')+'</span><span data-note-count>'+note.length+' / '+noteLimit+'</span></div><button class="vocab-link" data-vocab-action="retry-note" '+(unsaved?'':'hidden')+'>重试保存</button></div></details>';
+   const note=e.note||'',id='vocab-note-'+(++noteId),wordKey=key(e.s,e.k);
+   const hasNote=!!note.trim(),unsaved=unsavedNotes.has(wordKey),showPreview=hasNote&&!unsaved;
+   const status=unsaved?'未能保存，请先复制笔记或重试':note?'已保存到本机':'输入后自动保存到本机';
+   return '<details class="vocab-note-editor" '+(expanded&&hasNote?'open':'')+'>'+
+    '<summary><span>我的笔记</span><small data-note-summary>'+(hasNote?'已写笔记':'写下自己的理解')+'</small></summary>'+
+    '<div class="vocab-note-body"><div class="vocab-note-toolbar">'+
+    '<div class="vocab-note-switch" role="group" aria-label="笔记显示方式">'+
+    '<button type="button" data-vocab-action="note-view" data-note-view="edit" aria-pressed="'+!showPreview+'">编辑</button>'+
+    '<button type="button" data-vocab-action="note-view" data-note-view="preview" aria-pressed="'+showPreview+'">预览</button></div>'+
+    '<small>支持 Markdown</small></div>'+
+    '<div data-note-edit '+(showPreview?'hidden':'')+'>'+
+    '<label class="screen-only" for="'+id+'">我的笔记：'+esc(e.s)+'</label>'+
+    '<textarea id="'+id+'" data-vocab-note="'+esc(wordKey)+'" rows="4" maxlength="'+noteLimit+'" spellcheck="false" placeholder="写笔记或粘贴 Markdown，例如 **加粗**、- 列表。">\n'+esc(note)+'</textarea></div>'+
+    '<div class="vocab-note-markdown study-prose" data-note-preview '+(showPreview?'':'hidden')+'>'+(showPreview?renderNote(note):'')+'</div>'+
+    '<div class="vocab-note-footer"><span data-note-status role="status" aria-live="polite" class="'+(unsaved?'note-save-error':'')+'">'+status+'</span>'+
+    '<span data-note-count>'+note.length+' / '+noteLimit+'</span></div>'+
+    '<button class="vocab-link" data-vocab-action="retry-note" '+(unsaved?'':'hidden')+'>重试保存</button></div></details>';
+  }
+  function showNoteView(button){
+   const editor=button.closest('.vocab-note-editor');
+   const previewing=button.dataset.noteView==='preview';
+   const input=editor.querySelector('[data-vocab-note]');
+   const preview=editor.querySelector('[data-note-preview]');
+   if(previewing)preview.innerHTML=renderNote(input.value);
+   editor.querySelector('[data-note-edit]').hidden=previewing;
+   preview.hidden=!previewing;
+   for(const toggle of editor.querySelectorAll('[data-note-view]')){
+    toggle.setAttribute('aria-pressed',String(toggle===button));
+   }
+   if(!previewing)input.focus();
   }
   function noteHTML(s,k){const e=find(key(s,k));return e?noteEditor(e,true):'';}
   function saveNote(input){
@@ -77,7 +121,8 @@
   }
   function practiceNote(e,answered){
    if(!e?.note?.trim())return '';
-   return '<details class="vocab-practice-note" '+(answered?'open':'')+'><summary>'+(answered?'我的笔记':'看我的笔记（提示）')+'</summary><p>'+esc(e.note)+'</p></details>';
+   return '<details class="vocab-practice-note" '+(answered?'open':'')+'><summary>'+(answered?'我的笔记':'看我的笔记（提示）')+'</summary>'+
+    '<div class="study-prose">'+renderNote(e.note)+'</div></details>';
   }
   function updateControls(){document.querySelectorAll('[data-vocab-control]').forEach(el=>{const e=find(el.dataset.vocabControl);if(e)el.outerHTML=control(e);});}
   function render(body){
@@ -93,7 +138,7 @@
   }
   function list(){
    const c=counts(),all=entries().filter(e=>filter==='all'||(filter==='notes'?!!e.note?.trim():active(e))).slice().sort((a,b)=>order==='recent'?b.lastSeen-a.lastSeen:b.lookups-a.lookups||b.wrong-a.wrong||b.lastSeen-a.lastSeen);
-   render('<p class="vocab-intro">继续往后读就好。点开一个词的释义记 1 次，同词同读音合并计数；查满 3 次自动加入重点复习，也能手动加入。</p><div class="vocab-stats"><span><b>'+c.active+'</b> 个待复习</span><span><b>'+c.tracked+'</b> 个查过的词</span><span><b>'+c.lookups+'</b> 次查词</span></div><div class="vocab-list-tools"><div role="group" aria-label="生词本范围"><button class="toggle '+(filter==='active'?'on':'')+'" aria-pressed="'+(filter==='active')+'" data-vocab-action="active">重点复习</button><button class="toggle '+(filter==='all'?'on':'')+'" aria-pressed="'+(filter==='all')+'" data-vocab-action="all">全部查词记录</button><button class="toggle '+(filter==='notes'?'on':'')+'" aria-pressed="'+(filter==='notes')+'" data-vocab-action="notes">有笔记</button></div><label>排序 <select data-vocab-order aria-label="生词排序"><option value="frequency" '+(order==='frequency'?'selected':'')+'>查词次数最多</option><option value="recent" '+(order==='recent'?'selected':'')+'>最近查过</option></select></label></div><button class="primary vocab-practice-start" data-vocab-action="practice" '+(!c.active?'disabled':'')+'>只练不熟悉的词</button><p class="hint">每轮最多 10 题，全是点击选择；题目与选项随机。答错的词保留复习，答对不会自动替你移出。</p><div class="vocab-list">'+(all.length?all.slice(0,limit).map(row).join(''):'<p class="vocab-empty">'+(filter==='active'?'还没有待复习的词。读书时点「不熟悉，加入生词本」，或重复查同一个词 3 次。':filter==='notes'?'还没有自己的笔记。查词时展开「我的笔记」，写下你自己的理解吧。':'从本次更新开始记录。先回小说点开一个不认识的词吧。')+'</p>')+'</div>'+(all.length>limit?'<button class="outline" data-vocab-action="more">再显示 40 个</button>':'')+'<p class="vocab-storage-note">统计从本次更新开始，保存在当前设备。悬停、朗读和复习答题不增加查词次数；导出进度时会一并备份。</p>');
+   render('<p class="vocab-intro">继续往后读就好。点开一个词的释义记 1 次，同词同读音合并计数；查满 '+threshold+' 次自动加入重点复习，也能手动加入。</p><div class="vocab-stats"><span><b>'+c.active+'</b> 个待复习</span><span><b>'+c.tracked+'</b> 个查过的词</span><span><b>'+c.lookups+'</b> 次查词</span></div><div class="vocab-list-tools"><div role="group" aria-label="生词本范围"><button class="toggle '+(filter==='active'?'on':'')+'" aria-pressed="'+(filter==='active')+'" data-vocab-action="active">重点复习</button><button class="toggle '+(filter==='all'?'on':'')+'" aria-pressed="'+(filter==='all')+'" data-vocab-action="all">全部查词记录</button><button class="toggle '+(filter==='notes'?'on':'')+'" aria-pressed="'+(filter==='notes')+'" data-vocab-action="notes">有笔记</button></div><label>排序 <select data-vocab-order aria-label="生词排序"><option value="frequency" '+(order==='frequency'?'selected':'')+'>查词次数最多</option><option value="recent" '+(order==='recent'?'selected':'')+'>最近查过</option></select></label></div><button class="primary vocab-practice-start" data-vocab-action="practice" '+(!c.active?'disabled':'')+'>只练不熟悉的词</button><p class="hint">每轮最多 10 题，全是点击选择；题目与选项随机。答错的词保留复习，答对不会自动替你移出。</p><div class="vocab-list">'+(all.length?all.slice(0,limit).map(row).join(''):'<p class="vocab-empty">'+(filter==='active'?'还没有待复习的词。读书时点「不熟悉，加入生词本」，或重复查同一个词 '+threshold+' 次。':filter==='notes'?'还没有自己的笔记。查词时展开「我的笔记」，写下你自己的理解吧。':'从本次更新开始记录。先回小说点开一个不认识的词吧。')+'</p>')+'</div>'+(all.length>limit?'<button class="outline" data-vocab-action="more">再显示 40 个</button>':'')+'<p class="vocab-storage-note">统计从本次更新开始，保存在当前设备。悬停、朗读和复习答题不增加查词次数；导出进度时会一并备份。</p>');
   }
   function open(){stop();document.querySelector('#word-dialog[open]')?.close();filter='active';limit=40;round=null;list();}
   function start(only=null){
@@ -123,7 +168,9 @@
   }
   document.addEventListener('click',event=>{
    const button=event.target.closest('[data-vocab-action]');if(!button||button.disabled)return;
-   const action=button.dataset.vocabAction,e=find(button.dataset.vocabKey);
+   const action=button.dataset.vocabAction;
+   if(action==='note-view'){showNoteView(button);return;}
+   const e=find(button.dataset.vocabKey);
    if(action==='retry-note'){saveNote(button.closest('.vocab-note-editor').querySelector('[data-vocab-note]'));return;}
    if(action==='open'){open();return;}
    if(action==='toggle'&&e){if(active(e))master(e);else e.pinned=true;changed();updateControls();if(button.closest('#vocabulary-dialog'))list();return;}

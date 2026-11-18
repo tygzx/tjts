@@ -3,7 +3,7 @@ import {buildSentencePatternExplanations} from './content/sentence-pattern-expla
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),read=f=>fs.readFileSync(path.join(root,'dist',f),'utf8'),c={window:{}};
 for(const f of ['book.js','grammar.js','study-morphology.js','study-expressions.js','study-groups.js'])vm.runInNewContext(read(f),c);
 const B=c.window.BOOK,S=c.window.STUDY_GROUPS,original=JSON.stringify(B),notes=buildSentencePatternExplanations(B);
-assert.equal(notes.length,24);
+assert.equal(notes.length,26);
 for(const sentence of [25,29,30,31]){
  const line=B.lines[sentence-1],blocks=S.walkthrough(B,line).blocks,lessons=S.sentencePatternLessons(B,line);
  assert.equal(lessons.length,blocks.length,'Every chunk in the reviewed line needs a full explanation');
@@ -57,7 +57,17 @@ for(const native of [false,true]){
  assert.deepEqual([...lesson.querySelectorAll('.pattern-words > li > b')].map(e=>e.textContent),['なんだかんだで','万札が','30枚は','消えていった','はずだから']);
  assert.match(visibleText(lesson),/少说也有三十张.*至少三十万日元.*る换成て.*いく变成いった.*把这整个估计接到后面/s);
  assert.equal(lesson.querySelectorAll('.pattern-example').length,3);
- close();click('[data-tab="words"]');
+ close();jump(33);click('[data-sentence-chunk="1"]');
+ lesson=popup().querySelector('.sentence-pattern-lesson');
+ const living=[...lesson.querySelectorAll('.pattern-words > li')].find(el=>el.querySelector('b').textContent==='生活するのに');
+ assert.match(living.querySelector('.pattern-part-meaning').textContent,/日常生活/);
+ assert.deepEqual([...living.querySelectorAll('.pattern-points > li > b')].map(e=>e.textContent),['生活する','の','に']);
+ assert.match(visibleText(lesson),/土佐方言.*ないだろう/s);
+ close();click('[data-sentence-mode="words"]');click('[aria-label="查看 生活する"]');
+ const livingFocus=popup().querySelector('.word-pattern-focus');
+ assert.match(livingFocus.textContent,/生活するのに.*日常生活/s);
+ assert.equal(livingFocus.querySelectorAll('.pattern-points > li').length,3);
+ close();
  click('[data-tab="quiz"]');assert.equal(d.querySelectorAll('#learning-panel .sentence-pattern-lesson').length,0);assert.deepEqual(JSON.parse(native?saved:w.localStorage.getItem('umi-progress-v1')).done,[0,18]);assert.deepEqual(errors,[]);dom.window.close();
 }
 assert.equal(JSON.stringify(B),original);

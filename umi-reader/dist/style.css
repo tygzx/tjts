@@ -255,23 +255,43 @@
 @media(max-width:600px){.plain-parts li{grid-template-columns:1fr;gap:2px;padding:10px 0}.plain-parts li>b{max-width:100%}.plain-forms p[lang=ja]{font-size:18px}.plain-meaning{padding:12px}.plain-meaning p{font-size:17px}}
 
 
-/* Five-part sentence explanations, with examples immediately followed by Chinese. */
-.sentence-pattern-lesson{font-size:15px;line-height:1.9;overflow-wrap:anywhere}
+/* Readable lists and examples in study explanations and personal notes. */
+.study-prose{font-size:15px;line-height:1.8;color:var(--ink);text-align:start;overflow-wrap:anywhere}
+.study-prose :is(p,ul,ol,blockquote,pre,table){margin-block:.55em .8em}
+.study-prose :is(ul,ol){padding-inline-start:1.4em}
+.study-prose ul{list-style-type:disc}
+.study-prose ul ul{list-style-type:circle}
+.study-prose li{margin-block:.35em}
+.study-prose li::marker{color:var(--muted)}
+.study-prose li>:is(ul,ol){margin-block:.3em .6em}
+.study-prose :is(h1,h2,h3,h4,h5,h6){line-height:1.5;margin-block:1em .45em}
+.study-prose h1{font-size:1.35em}
+.study-prose h2{font-size:1.2em}
+.study-prose :is(h3,h4,h5,h6){font-size:1.08em}
+.study-prose blockquote{margin-inline:0;padding:0 0 0 12px;border-inline-start:3px solid #b2c9d5;color:var(--muted)}
+.study-prose :is(code,pre){background:#edf3f6;border-radius:4px}
+.study-prose code{padding:.1em .3em;font-size:.92em}
+.study-prose pre{padding:10px 12px;overflow-x:auto}
+.study-prose pre>code{padding:0;background:none}
+.study-prose table{display:block;overflow-x:auto;border-collapse:collapse}
+.study-prose :is(th,td){padding:5px 8px;border:1px solid var(--line);text-align:start}
+.study-prose .plain-parts>li{display:list-item;padding:0;border:0}
+.study-prose .plain-parts>li>b{font-weight:700;font-size:inherit;margin-inline-end:.65em}
+
+.sentence-pattern-lesson{padding-bottom:4px}
 .sentence-pattern-lesson h3{font-size:17px;line-height:1.7;margin:26px 0 12px;color:var(--ink,#183b4d)}
 .sentence-pattern-lesson p{margin:10px 0}.sentence-pattern-lesson .pattern-source{font-size:23px;line-height:1.8}
 .sentence-pattern-lesson .pattern-meaning{background:#edf5f8;padding:12px 14px;border-radius:8px;font-weight:600}
-.pattern-words,.pattern-structure{padding-left:22px;margin:10px 0 20px}.pattern-words li,.pattern-structure li{margin:10px 0;padding-left:3px}.pattern-words b{font-size:17px}
+.study-prose :is(.pattern-words,.pattern-structure)>li{margin-block:.65em;padding-inline-start:2px}
+.study-prose :is(.pattern-words,.pattern-structure,.pattern-points)>li>b{display:inline;color:var(--ink);font-size:inherit;font-weight:700}
+.pattern-words>li>.pattern-part-meaning,.pattern-structure>li>.pattern-part-meaning{margin-inline-start:.4em}
 .pattern-example-label{font-weight:600}.pattern-example{border-left:3px solid #a5c2ce;padding:5px 14px;margin:12px 0}.pattern-example p{margin:4px 0}.pattern-example p[lang=ja]{font-size:18px}.pattern-example p[lang=zh-CN]{color:#416473}
 .pattern-recall{background:#edf5f8;border-radius:9px;padding:14px 16px;margin-top:24px}.pattern-recall h3{font-size:15px;margin:0 0 8px}.pattern-recall p{margin:0;font-weight:600}
 .sentence-pattern-card summary small{line-height:1.7;max-width:100%}
-.pattern-part-reading{margin-inline-start:10px;color:var(--muted);font-size:13px}
-.sentence-pattern-lesson .pattern-part-meaning{margin:2px 0 0}
-.pattern-forms{margin:12px 0;padding-inline-start:22px}
-.pattern-forms li{margin:8px 0;padding-inline-start:3px}
-.pattern-forms p,.sentence-pattern-lesson .pattern-forms p{margin:2px 0 0}
-.word-pattern-focus{margin:18px 0;padding:14px 16px;border:1px solid var(--line);border-radius:9px;background:#f4f8fa;font-size:15px;line-height:1.8;overflow-wrap:anywhere}
-.word-pattern-focus h3{margin:0 0 6px;font-size:14px}
-.word-pattern-focus .pattern-part-source{margin:0 0 4px}
-.word-pattern-focus .pattern-part-meaning{margin:0}
-.word-pattern-focus .pattern-forms{margin-bottom:0}
-@media(max-width:600px){.sentence-pattern-lesson h3{font-size:16px}.sentence-pattern-lesson{font-size:14px}.pattern-words,.pattern-structure{padding-left:18px}.pattern-example{padding-left:10px}.pattern-example p[lang=ja]{font-size:17px}}
+.pattern-part-reading{margin-inline-start:.55em;color:var(--muted);font-size:.85em}
+.study-prose .pattern-forms p{margin:2px 0 0}
+.word-pattern-focus{margin:18px 0;padding:13px 0 10px;border-block:1px solid var(--line)}
+.word-pattern-focus h3{margin:0 0 7px;font-size:16px}
+.word-pattern-focus .pattern-part-source{margin-block:0 .45em}
+.word-pattern-focus .pattern-points>li>span,.word-pattern-focus .pattern-part-reading+span{margin-inline-start:.4em}
+@media(max-width:600px){.study-prose{font-size:14px}.sentence-pattern-lesson h3{font-size:16px}.pattern-example{padding-left:10px}.pattern-example p[lang=ja]{font-size:17px}}
