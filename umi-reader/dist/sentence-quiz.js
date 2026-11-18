@@ -202,5 +202,45 @@
   if(!result.length){const question=translation(data,book,index,curated,random);if(question)result.push(question);}
   return shuffle(result,random);
  }
- window.SENTENCE_QUIZ=Object.freeze({create});
+ function vocabulary(book,entries,{limit=10,rng=Math.random}={}){
+  const vocab=window.UMI_VOCABULARY;if(!vocab||!entries.length)return [];
+  const data=prepare(book),descriptors=[],seen=new Set(),surfaces=new Map();
+  for(const groups of data.groups)for(const g of groups)if(quizUnit(g)&&g.words.every(quizUnit)&&completeForm(g))add(surfaces,g.p,g.s);
+  for(const entry of entries){
+   const id=vocab.key(entry.s,entry.k);if(seen.has(id))continue;seen.add(id);
+   for(const source of entry.seen){
+    const groups=data.groups[source.line];if(!groups)continue;
+    let offset=0;
+    const groupIndex=groups.findIndex(g=>{const at=offset;offset+=g.s.length;return at===source.offset&&vocab.key(g.s,g.k)===id;});
+    if(groupIndex<0)continue;
+    const g=groups[groupIndex],item=lexeme(g);if(!quizUnit(g)||!g.words.every(quizUnit))break;
+    const make=kind=>{
+     let q;
+     if(kind==='recall'){
+      const result=options(kind,g.s,[...(surfaces.get(g.p)||[])].filter(s=>s!==g.s),rng);if(!result)return null;
+      q={id:'q-'+hash(id+'\0recall'),kind,prompt:'回忆读过的小说：空格里原来是哪个词？',focus:'补回原文中的词',context:excerpt(groups,groupIndex,groupIndex+1,'【　？　】'),...result,explanation:'原文是「'+excerpt(groups,groupIndex,groupIndex+1,'【'+g.s+'】')+'」。本题按小说原文作答。'};
+     }else{
+      q=buildWord(data,source.line,g,groupIndex,kind,rng,true);if(!q)return null;
+      q.context=excerpt(groups,groupIndex,groupIndex+1,'【'+g.s+'】');
+     }
+     return {...q,vocabKey:id,line:source.line,offset:source.offset};
+    };
+    const kinds=[];
+    if(isReading(g.k)&&kana(g.s)!==kana(g.k))kinds.push('reading');
+    if(item.reviewed&&item.meaning)kinds.push('meaning');
+    if(['动词','形容词'].includes(item.p)&&item.base&&item.base!==g.s&&(!item.w.auto||item.baseOverride))kinds.push('base');
+    kinds.push('recall');
+    descriptors.push({id,make,kinds});break;
+   }
+  }
+  // Cover different saved words first. Never fall back to an unrelated sentence.
+  const queues=shuffle(descriptors,rng).map(d=>({...d,kinds:shuffle(d.kinds,rng)})),result=[];
+  const count=Math.max(0,Math.min(20,Math.floor(Number(limit)||0)));
+  while(result.length<count&&queues.some(d=>d.kinds.length))for(const d of queues){
+   let q=null;while(d.kinds.length&&!q)q=d.make(d.kinds.shift());
+   if(q)result.push(q);if(result.length>=count)break;
+  }
+  return shuffle(result,rng);
+ }
+ window.SENTENCE_QUIZ=Object.freeze({create,vocabulary});
 })();

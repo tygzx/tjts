@@ -16,6 +16,7 @@
    if(!/^\d+$/.test(key)||Number(key)>=total||!setting||typeof setting!=='object')continue;
    result.sentencePlayback[key]={mode:setting.mode==='ja'?'ja':'both',count:[0,1,3,5].includes(setting.count)?setting.count:1,pause:[1,2,3,5].includes(setting.pause)?setting.pause:2};
   }
+  result.vocabulary=window.UMI_VOCABULARY?.clean(value.vocabulary,total)||[];
   return result;
  }
  window.UMI_WEB={
