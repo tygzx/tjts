@@ -25,7 +25,7 @@
  let walkAt=0,walkAll=false;
  let tab='words',selected=-1,translation=false,sidebar=false,playing=false,voiceMessage='',kanaTab='basic',contextPage=null,toastTimer,groups=[];
  const recorded=!textOnly&&!native&&window.createRecordedAudio?window.createRecordedAudio({getRate:()=>state.rate,ended:(status,token)=>player.ended(status,token)}):null;
- const save=()=>{try {const s=JSON.stringify(state);if(native)native.writeState(s);else localStorage.setItem('umi-progress-v1',s);storageOK=true;return true;}catch(e){storageOK=false;toast('无法保存进度，请检查设备存储空间。');return false;}};
+ const save=()=>{try {const s=JSON.stringify(state);if(native){if(native.writeState(s)===false)throw new Error('Storage full');}else localStorage.setItem('umi-progress-v1',s);storageOK=true;return true;}catch(e){storageOK=false;toast('无法保存进度，请检查设备存储空间。');return false;}};
  const lineText=i=>B.lines[i].t.map(n=>W[n].s).join('');
  const section=()=>B.sections.findLast?B.sections.findLast(s=>s.start<=state.index):[...B.sections].reverse().find(s=>s.start<=state.index);
  function makeGroups(line){
@@ -312,7 +312,12 @@
  function actionBriefHTML(lessons=[]){
   return lessons.map(a=>'<section class="action-brief plain-explanation"><h4 lang="ja">'+esc(a.noun)+' を '+esc(a.form)+'</h4><p class="plain-link"><b>'+esc(a.meaning)+'</b></p><ul class="plain-parts"><li><b lang="ja">'+esc(a.noun)+'</b><span>'+esc(a.nounMeaning)+'</span></li><li><b lang="ja">を</b><span>'+esc(a.relation)+'</span></li></ul>'+(a.form!=='する'?'<p class="plain-word-change" lang="ja">する → '+esc(a.form)+'</p><p>'+esc(a.steps.at(-1).why)+'</p>':'')+'</section>').join('');
  }
- function plainBlockHTML(block){
+ function blockSyntaxHTML(block){
+  const syntax=block?.syntax;if(!syntax)return '';
+  return '<section class="sentence-structure" aria-label="句子结构"><h3>句子结构</h3><p class="syntax-summary">'+esc(syntax.summary)+'</p><dl>'+syntax.rows.map(row=>'<div class="syntax-row"><dt>'+esc(row.role)+'</dt><dd><b lang="ja">'+esc(row.ja)+'</b>'+(row.omitted?'<small class="syntax-omitted">原文此处省略</small>':'')+'<p>'+esc(row.zh)+'</p></dd></div>').join('')+'</dl></section>';
+ }
+ function plainBlockHTML(block){return blockSyntaxHTML(block)+plainBlockDetailsHTML(block);}
+ function plainBlockDetailsHTML(block){
   const structured=window.STUDY_GROUPS.sentencePatternLesson(B,B.lines[state.index],block.quote);if(structured)return sentencePatternHTML(structured,false);
   const n=window.STUDY_GROUPS.plainExplanation(B,B.lines[state.index],block.quote);
   if(n)return plainExplanationHTML(n,false);
@@ -342,6 +347,7 @@
  }
  function openWord(index,{track=true}={}){
   const g=groups[index];if(!g||g.p==='标点')return;
+  const wordSyntax=blockSyntaxHTML(sentenceChunks()?.blocks.find(b=>b.pieces.some(p=>p.index===index)));
   const vocabControl=vocabulary?.record(state.index,groups.slice(0,index).reduce((n,x)=>n+x.s.length,0),g,track)||'';
   selected=index;
   document.querySelectorAll('[data-select]').forEach(el=>el.classList.toggle('selected',Number(el.dataset.select)===index));
@@ -360,8 +366,13 @@
    (g.analyses?.some(a=>a.layered)?'<p class="word-unit-note">这是一整块动词表达，里面还含有语法变化。下面拆开看。</p>':'')+combinationHTML(g,true);
   const wordAnalysis=g.analyses?.length?'<section class="word-analysis" aria-label="本句形式讲解">'+analysisCardsHTML(g.analyses,true,new Set((g.actionLessons||[]).flatMap(x=>x.contrastKeys||[])))+'</section>':'';
   const supplement=fullLesson&&wordAnalysis?'<details class="plain-more"><summary>更多词形与读音</summary>'+wordAnalysis+'</details>':wordAnalysis;
-  dialog('word-dialog','词语解释',`<div class="word-zoom-card"><div class="word-zoom-text" lang="ja">${esc(g.s)}</div><p class="word-zoom-kana" lang="ja">${esc(g.k)}</p><p class="word-zoom-romaji" lang="en">${esc(g.r)}</p>${base!==g.s?`<p class="word-zoom-base">原形 <span lang="ja">${esc(base)}</span>${formReadingHTML(base,g.baseKana,true)}</p>`:''}</div>${vocabControl}<div class="word-zoom-size"><label for="word-zoom-size">字形大小</label><span aria-hidden="true">小</span><input id="word-zoom-size" type="range" min="32" max="128" step="4" value="${wordSize}"><span aria-hidden="true">大</span></div>${wordMeaning}${vocabulary?.noteHTML(g.s,g.k)||''}${wordLesson}${supplement}${g.actionLessons?.length?'<details class="plain-more"><summary>查看「を」和动作的详细接法</summary>'+actionLessonsHTML(g.actionLessons)+'</details>':''}${usage?`<p class="word-zoom-note">${esc(usage)}</p>`:''}${morph||extra.length||parts?`<details class="word-zoom-note grammar-reference"><summary>原有词形注记（选看）</summary>${esc(morph)}${parts?`<p class="word-parts" lang="ja">构成：${esc(parts)}</p>`:''}${extra.map(x=>`<p><b lang="ja">${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}</p>`).join('')}</details>`:''}${textOnly?'':`${particleLinksHTML(g.particleKeys)}<button class="primary word-zoom-play" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}听这个词</button>`}`);
+  dialog('word-dialog','词语解释',`<div class="word-zoom-card"><div class="word-zoom-text" lang="ja">${esc(g.s)}</div><p class="word-zoom-kana" lang="ja">${esc(g.k)}</p><p class="word-zoom-romaji" lang="en">${esc(g.r)}</p>${base!==g.s?`<p class="word-zoom-base">原形 <span lang="ja">${esc(base)}</span>${formReadingHTML(base,g.baseKana,true)}</p>`:''}</div>${vocabControl}<div class="word-zoom-size"><label for="word-zoom-size">字形大小</label><span aria-hidden="true">小</span><input id="word-zoom-size" type="range" min="32" max="128" step="4" value="${wordSize}"><span aria-hidden="true">大</span></div>${wordMeaning}${wordSyntax}${vocabulary?.noteHTML(g.s,g.k)||''}${wordLesson}${supplement}${g.actionLessons?.length?'<details class="plain-more"><summary>查看「を」和动作的详细接法</summary>'+actionLessonsHTML(g.actionLessons)+'</details>':''}${usage?`<p class="word-zoom-note">${esc(usage)}</p>`:''}${morph||extra.length||parts?`<details class="word-zoom-note grammar-reference"><summary>原有词形注记（选看）</summary>${esc(morph)}${parts?`<p class="word-parts" lang="ja">构成：${esc(parts)}</p>`:''}${extra.map(x=>`<p><b lang="ja">${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}</p>`).join('')}</details>`:''}${textOnly?'':`${particleLinksHTML(g.particleKeys)}<button class="primary word-zoom-play" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}听这个词</button>`}`);
   $('#word-dialog').style.setProperty('--word-zoom-size',wordSize+'px');
+  const occurrences=window.UMI_WORD_OCCURRENCES?.[state.index],ordinal=occurrences?.[index];
+  if(occurrences?.length===groups.length&&Number.isInteger(ordinal)&&ordinal>0){
+   $('#word-dialog .word-zoom-card').insertAdjacentHTML('beforeend','<p class="word-occurrence" title="按原文顺序统计同一写法、同一读音。查词次数单独记录。">在书中第 <b>'+ordinal+'</b> 次出现</p>');
+  }
+  vocabulary?.loadImages($('#word-dialog'));
  }
  function grammarHTML(){
   const gs=grammarFor(),cur=CURATED[state.index];
@@ -470,7 +481,7 @@
    case'open-settings':openSettings();break;
    case'export-progress':exportProgress();break;
    case'import-progress':$('#progress-file').click();break;
-   case'confirm-import':if(pendingImport){stop();Object.assign(state,pendingImport);pendingImport=null;save();$('dialog[open]')?.close();selected=-1;translation=false;contextPage=null;render();toast('阅读进度已恢复。');}break;
+   case'confirm-import':restoreProgress(el);break;
    case'mobile-menu':sidebar=!sidebar;$('.sidebar').classList.toggle('mobile-open',sidebar);break;
    case'tts-settings':if(native)native.openTtsSettings();else toast('请在设备的语言与语音设置里安装日语语音包。');break;
    case'test-voice':speak('こんにちは。いっしょに、にほんごをよみましょう。');break;
@@ -485,9 +496,9 @@
  document.addEventListener('change',async e=>{
   if(e.target.id!=='progress-file'||!e.target.files?.length)return;
   const file=e.target.files[0];e.target.value='';
-  try{if(file.size>16*1024*1024)throw new Error('备份文件过大，请选择阅读进度 JSON 文件。');pendingImport=window.UMI_WEB.decode(await file.text(),B.lines.length);$('dialog[open]')?.close();dialog('import-dialog','恢复阅读进度',`<p class="hint">备份停在第 <b>${pendingImport.index+1}</b> 句，已读 <b>${pendingImport.done.length}</b> 句。恢复后会替换当前浏览器的进度、跟读设置、生词本和查词统计。</p><div class="settings-row"><button class="outline" data-close="1">取消</button><button class="primary" id="confirm-import">恢复此备份</button></div>`);}catch(error){pendingImport=null;toast(error.message||'无法读取备份文件。');}
+  try{if(file.size>window.UMI_WEB.maxBackupBytes)throw new Error('备份文件过大，请选择阅读进度 JSON 文件。');pendingImport=window.UMI_WEB.readBackup(await file.text(),B.lines.length);$('dialog[open]')?.close();dialog('import-dialog','恢复阅读进度',`<p class="hint">备份停在第 <b>${pendingImport.state.index+1}</b> 句，已读 <b>${pendingImport.state.done.length}</b> 句。恢复后会替换当前浏览器的进度、跟读设置、生词本、笔记（含截图）和查词统计。</p><div class="settings-row"><button class="outline" data-close="1">取消</button><button class="primary" id="confirm-import">恢复此备份</button></div>`);}catch(error){pendingImport=null;toast(error.message||'无法读取备份文件。');}
  });
- window.readerBack=()=>{const dialog=$('dialog[open]');if(dialog){dialog.close();return true;}if(sidebar){sidebar=false;$('.sidebar').classList.remove('mobile-open');return true;}if(state.readingMode==='novel'&&novelReader){novelReader.leave();return true;}return false;};
+ window.readerBack=()=>{const dialog=[...document.querySelectorAll('dialog[open]')].at(-1);if(dialog){dialog.close();return true;}if(sidebar){sidebar=false;$('.sidebar').classList.remove('mobile-open');return true;}if(state.readingMode==='novel'&&novelReader){novelReader.leave();return true;}return false;};
  const kanaRows=['あいうえお','かきくけこ','さしすせそ','たちつてと','なにぬねの','はひふへほ','まみむめも','や ゆ よ','らりるれろ','わ   を','ん    '];
  const voiced=['がぎぐげご','ざじずぜぞ','だぢづでど','ばびぶべぼ','ぱぴぷぺぽ'];
  const contracted=['きゃ','きゅ','きょ','しゃ','しゅ','しょ','ちゃ','ちゅ','ちょ','にゃ','にゅ','にょ','ひゃ','ひゅ','ひょ','みゃ','みゅ','みょ','りゃ','りゅ','りょ','ぎゃ','ぎゅ','ぎょ','じゃ','じゅ','じょ','びゃ','びゅ','びょ','ぴゃ','ぴゅ','ぴょ'];
@@ -495,7 +506,40 @@
  function dialog(id,title,body){$('#'+id)?.remove();const d=document.createElement('dialog');d.id=id;d.className=id==='word-dialog'?'drawer word-dialog':'drawer';d.setAttribute('aria-label',title);d.innerHTML=`<div class="drawer-inner"><div class="drawer-head"><h2>${esc(title)}</h2><button class="close" data-close="1" aria-label="关闭">${icon('close')}</button></div>${body}</div>`;document.body.append(d);d.addEventListener('click',e=>{if(e.target===d){const rect=d.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)d.close();}});d.showModal();}
  function openKana(){dialog('kana-dialog','五十音图',`<p class="drawer-subtitle">随时查，慢慢记。${textOnly?'':'点一下就能听。'}</p><div id="kana-content">${kanaContent()}</div>`);}
  function webSettingsHTML(){return native?'':`<div class="web-settings"><label class="settings-label">网页版 · 随时接着读</label><p class="hint">${textOnly?'电脑和手机使用同一份正文与学习资料。':'电脑和手机共用正文、插画与录音。'}阅读位置和每句设置保存在当前浏览器中；安卓 App 与不同浏览器之间不会自动同步进度。</p><div class="settings-row"><button class="outline" data-web-open="1">查看手机访问地址</button><button class="outline" id="export-progress">导出进度</button><button class="outline" id="import-progress">导入进度</button></div><input type="file" id="progress-file" accept=".json,application/json" hidden><p class="hint">将导出的 JSON 备份传到另一台设备，在该设备的网页版导入，就能继续阅读。</p></div>`;}
- function exportProgress(){const url=URL.createObjectURL(new Blob([window.UMI_WEB.encode(state,B.lines.length)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='听到涛声-阅读进度-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);toast('进度备份已导出。');}
+ async function exportProgress(){
+  try{
+   const snapshot=JSON.parse(JSON.stringify(state)),ids=window.UMI_WEB.imageIds(snapshot);
+   const images=ids.length?await window.UMI_NOTE_IMAGES.read(ids):[];
+   const file=new Blob([window.UMI_WEB.encode(snapshot,B.lines.length,images)],{type:'application/json'});
+   if(file.size>window.UMI_WEB.maxBackupBytes)throw new Error('笔记截图超过备份大小限制，请先减少截图再导出。');
+   const url=URL.createObjectURL(file),a=document.createElement('a');
+   a.href=url;a.download='听到涛声-阅读进度-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+   setTimeout(()=>URL.revokeObjectURL(url),30000);toast('进度备份已导出。');
+  }catch(error){toast(error.message||'无法导出进度，请重试。');}
+ }
+ async function restoreProgress(button){
+  const backup=pendingImport;if(!backup||button.disabled)return;
+  button.disabled=true;
+  const images=window.UMI_NOTE_IMAGES,oldIds=window.UMI_WEB.imageIds(state);
+  let staged=[];
+  try{
+   let progress=backup.state;
+   if(backup.images.length){
+    const idMap=new Map(backup.images.map(image=>[image.id,images.createId()]));
+    const records=backup.images.map(image=>({id:idMap.get(image.id),data:image.data}));
+    await images.save(records);staged=records.map(image=>image.id);
+    if(!button.closest('dialog')?.open||pendingImport!==backup){await images.remove(staged);return;}
+    progress={...progress,vocabulary:progress.vocabulary.map(entry=>entry.noteImages?.length?{...entry,noteImages:entry.noteImages.map(id=>idMap.get(id))}:entry)};
+   }
+   const previous={...state};Object.assign(state,progress);
+   if(!save()){Object.assign(state,previous);throw new Error('无法保存恢复后的进度，请检查设备存储空间。');}
+  }catch(error){
+   if(staged.length)await images.remove(staged).catch(()=>{});
+   button.disabled=false;toast(error.message||'无法恢复阅读进度。');return;
+  }
+  if(oldIds.length)images.remove(oldIds).catch(()=>{});
+  pendingImport=null;stop();button.closest('dialog')?.close();selected=-1;translation=false;contextPage=null;render();toast('阅读进度已恢复。');
+ }
  async function openWebAccess(){
   $('dialog[open]')?.close();dialog('web-access-dialog','在手机浏览器打开',`<p class="drawer-subtitle">手机和电脑连接同一个路由器或 Wi-Fi。</p><div id="web-addresses" role="status">正在读取访问地址…</div><div class="source-note">在手机浏览器输入上面的地址，然后收藏网页。阅读时电脑需要开机，网页版服务需要保持运行。<br><br>如果打不开，先检查手机是否仍在使用移动数据，以及电脑是否允许本程序通过防火墙访问本地网络。</div>`);
   try{const response=await fetch('api/connection',{cache:'no-store'});if(!response.ok)throw new Error();const info=await response.json();const urls=info.addresses?.filter(item=>/^http:\/\/(?:\d{1,3}\.){3}\d{1,3}:\d+\/$/.test(item.url))||[];const el=$('#web-addresses');if(el)el.innerHTML=urls.length?urls.map(item=>`<div class="web-address"><small>${esc(item.name)}</small><a href="${esc(item.url)}">${esc(item.url)}</a></div>`).join(''):'没有发现局域网地址，请先连接家里的路由器。';}catch{const el=$('#web-addresses');if(el)el.textContent='请双击文件夹里的“启动听到涛声网页版”，再来查看手机访问地址。';}
@@ -504,7 +548,7 @@
  function learningSettingsHTML(){if(textOnly)return '';const indices=new Set([...Object.keys(window.LEARNING_AUDIO?.chinese||{}),...Object.keys(window.CHINESE_EMOTION?.clips||{})]),completed=[...indices].map(Number).filter(i=>Number.isInteger(i)&&i>=0&&i<B.lines.length&&chineseRoleFor(i)).length,grammar=Object.keys(window.LEARNING_AUDIO?.grammar||{}).filter(grammarAudioFor).length;return `<label class="settings-label">中文情感配音</label><p class="hint">已完成 ${completed} / ${B.lines.length} 句。已完成的句子会优先播放新的中文配音，和日文共用“对比原版”开关；其余句子仍可听原版中文录音。中文内容与页面参考译文逐字对应。</p><label class="settings-label">语法与助词讲解</label><p class="hint">${grammar?`已有 ${grammar} 条语法讲解录音。`:'讲解录音正在准备。'}在语法笔记里点“听讲解”，先听日文句型或助词，再听中文解释。讲解只播放一遍；点“停止讲解”、上方“停止朗读”，或切换句子都可停止。</p>`;}
  function openSettings(){if(textOnly){dialog('settings-dialog','学习设置',`<p class="drawer-subtitle">此版本不含音频和插图。</p>${webSettingsHTML()}<label class="settings-label">给初学者的小提示</label><div class="source-note">先看日文和假名，试着自己读，再打开中文参考。熟悉假名后可以关掉罗马音。点击日文可查看词语解释与内部构成，使用句子测验检查理解。<br><br>全书 ${B.lines.length} 个原文行均可学习，一行可能包含多个句号。中文机器参考译文、自动词义与句型提示未经逐句人工审校，专名与方言需结合上下文核对。<br><br>阅读位置与显示偏好自动保存在当前浏览器中。</div>`);return;}dialog('settings-dialog','朗读与学习设置',`<p class="drawer-subtitle">${native?'正文、学习资料与双语音频保存在应用里。':'沿用 App 的正文、插画与双语录音，打开就能继续读。'}</p>${webSettingsHTML()}${roleSettingsHTML()}${learningSettingsHTML()}<label class="settings-label">原版朗读</label><p class="hint">日文：Nanami · 中文：晓晓。使用神经网络合成声音，保留句子停顿和语气起伏。建议先用 1.0× 听自然语调，再放慢跟读。</p><div class="settings-row"><button class="primary" id="test-voice">${icon('audio')}试听日文</button></div><label class="settings-label">逐句插图</label><p class="hint">已完成 ${sentenceArtCount()} / ${B.lines.length} 张，优先显示与当前原文一致的独立插图。未完成的句子若已有场景插画，则继续显示场景图。新图会分批加入；网页版刷新后加载，安卓 App 随安装包更新。</p><label class="settings-label">场景插画</label><p class="hint">开篇第 1–${window.ILLUSTRATIONS.coveredLines} 句已绘制 ${window.ILLUSTRATIONS.scenes.length} 个场景。相邻几句共用同一画面，点插画可放大，也可收起。人物和公寓采用固定参考设定；这是辅助阅读的原创 AI 插画，并非原书官方插图。</p><label class="settings-label">循环跟读</label><p class="hint">点“∞ 无限循环”即可重复播放当前这一句，也可在下面设置朗读顺序、次数和停顿，该句会单独记住设置。“日文 → 中文”先读原文，再读页面显示的中文参考。按停止、切换句子或离开应用都会结束循环。</p><label class="settings-label">给初学者的小提示</label><div class="source-note">先听一句，再看假名；试着自己读，最后打开中文参考。熟悉假名后可以关掉罗马音。<br><br>词语按原句顺序排列。全书 ${B.lines.length} 个原文行均可学习；一行可能包含多个句号。词语释义已按全书学习分组校订；“开篇 · 初到东京”第 1–173 句中文已对照日文重校。后续整句中文仍包含机器参考，句型提示也需结合上下文核对。<br><br>语音为合成朗读，不是真人有声书；声音的语气不代表原作者的表演指导。中文音频和显示的参考译文一致。阅读位置和每句循环设置自动保存。</div>`);}
 
- vocabulary=window.createVocabularyNotebook?.({book:B,getState:()=>state,save,showDialog:dialog,stop,openSource:source=>{state.readingMode='study';setIndex(source.line);let offset=0;const index=groups.findIndex(g=>{const at=offset;offset+=g.s.length;return at===source.offset;});if(index>=0)openWord(index,{track:false});}});
+ vocabulary=window.createVocabularyNotebook?.({book:B,getState:()=>state,save,showDialog:dialog,stop,notify:toast,openSource:source=>{state.readingMode='study';setIndex(source.line);let offset=0;const index=groups.findIndex(g=>{const at=offset;offset+=g.s.length;return at===source.offset;});if(index>=0)openWord(index,{track:false});}});
  novelReader=window.createNovelReader?.({book:B,getState:()=>state,save,showDialog:dialog,wordRange:(line,offset)=>{const word=novelWordAt(line,offset);return word?{start:word.start,end:word.end}:null;},lookup:(line,offset)=>{const word=novelWordAt(line,offset);if(!word)return;stop();state.index=line;groups=word.words;save();openWord(word.g.i);},exit:line=>{stop();state.index=line;state.readingMode='study';selected=-1;quizRound=null;walkAt=0;save();render();window.scrollTo(0,0);}});
  render();
 })();

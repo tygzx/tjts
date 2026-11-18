@@ -3,6 +3,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import {fileURLToPath} from 'node:url';
 import {buildWalkthroughs} from './lib/build-walkthroughs.mjs';
+import {buildWordOccurrences} from './lib/build-word-occurrences.mjs';
 import {buildParticleCombinations} from './lib/build-particle-combinations.mjs';
 import {buildGrammarLessons} from './lib/build-grammar-lessons.mjs';
 import {buildActionConnections} from './lib/build-action-connections.mjs';
@@ -43,3 +44,5 @@ const runtime=fs.readFileSync(path.join(root,'scripts/lib/study-analysis-runtime
 new vm.Script(runtime);
 fs.writeFileSync(file,base+'\n\n'+marker+'\n'+runtime);
 console.log('Built',data.sentences.length,'contextual sentence analyses');
+buildWordOccurrences(root);
+console.log('Updated word occurrence ordinals');

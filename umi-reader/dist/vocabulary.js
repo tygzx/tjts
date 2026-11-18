@@ -3,6 +3,7 @@
  'use strict';
  const threshold=9;
  const noteLimit=2000;
+ const screenshots=window.UMI_NOTE_IMAGES;
  const key=(s,k)=>encodeURIComponent(s.normalize('NFKC'))+'|'+encodeURIComponent(k.normalize('NFKC'));
  const integer=(v,max=100000000)=>Number.isInteger(v)&&v>=0?Math.min(v,max):0;
  const active=e=>!!e&&(e.pinned||e.lookups-e.masteredAt>=threshold);
@@ -17,6 +18,10 @@
    }
    if(!seen.length)continue;
    const item={s:e.s,k:e.k,lookups,pinned:e.pinned===true,masteredAt:Math.min(lookups,integer(e.masteredAt)),lastSeen:integer(e.lastSeen,8640000000000000),correct:integer(e.correct),wrong:integer(e.wrong),note:typeof e.note==='string'?e.note.slice(0,noteLimit):'',seen};
+   if(screenshots&&Array.isArray(e.noteImages)){
+    const ids=[...new Set(e.noteImages.filter(screenshots.isId))].slice(0,screenshots.maxPerNote);
+    if(ids.length)item.noteImages=ids;
+   }
    const id=key(item.s,item.k);if(!entries.has(id)||entries.get(id).lookups<lookups)entries.set(id,item);
   }
   return [...entries.values()];
@@ -42,7 +47,7 @@
   return null;
  }
  window.UMI_VOCABULARY=Object.freeze({threshold,noteLimit,key,active,clean,visit,master,answer,resolve});
- window.createVocabularyNotebook=function({book,getState,save,showDialog,openSource,stop}){
+ window.createVocabularyNotebook=function({book,getState,save,showDialog,openSource,stop,notify=()=>{}}){
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const markdown=typeof window.markdownit==='function'
    ? window.markdownit({html:false,linkify:false,breaks:true}).disable(['image','link','autolink'])
@@ -52,6 +57,8 @@
   const text=line=>book.lines[line].t.map(n=>book.words[n].s).join('');
   let filter='active',order='frequency',limit=40,round=null,preparing=false,noteId=0;
   const unsavedNotes=new Set();
+  const addingImages=new Set();
+  let pendingPicker=null;
   function counts(){return {tracked:entries().length,active:entries().filter(active).length,lookups:entries().reduce((n,e)=>n+e.lookups,0)};}
   function updateBadges(){document.querySelectorAll('[data-vocab-count]').forEach(el=>{el.textContent=counts().active||'';});}
   function persist(){const saved=save()!==false;if(saved)unsavedNotes.clear();return saved;}
@@ -69,16 +76,32 @@
     '<small>已查 '+e.lookups+' 次 · '+reviewMessage+'</small></div>';
   }
   function record(line,offset,g,count=true){const e=visit(entries(),line,offset,g,count);changed();return control(e);}
-  function renderNote(note){
-   if(!note.trim())return '<p class="vocab-note-empty">还没有笔记。</p>';
+  function hasNote(e){return !!(e?.note?.trim()||e?.noteImages?.length);}
+  function noteSummary(e){
+   const count=e.noteImages?.length||0,hasText=!!e.note?.trim();
+   return count?(hasText?'已写笔记 · ':'')+count+' 张截图':hasText?'已写笔记':'写下自己的理解';
+  }
+  function renderNote(note,withImages=false){
+   if(!note.trim())return withImages?'':'<p class="vocab-note-empty">还没有笔记。</p>';
    return markdown?markdown.render(note):'<p class="vocab-note-plain">'+esc(note)+'</p>';
+  }
+  function galleryHTML(e,editable=false){
+   if(!screenshots||!editable&&!e.noteImages?.length)return '';
+   return '<div class="vocab-note-gallery" data-note-gallery="'+esc(key(e.s,e.k))+'"'+(editable?' data-note-gallery-editable':'')+'></div>';
+  }
+  function imageControls(e){
+   const full=e.noteImages?.length>=screenshots.maxPerNote;
+   const help=full?'已附 '+screenshots.maxPerNote+' 张':window.Android?.chooseNoteImage?'':'也可在编辑框中粘贴截图';
+   return '<div class="vocab-image-tools"><button type="button" class="outline" data-vocab-action="pick-image" '+(full?'disabled':'')+'>添加截图</button>'+
+    '<input type="file" accept="'+screenshots.accepted+'" multiple data-note-file hidden>'+
+    '<small data-note-image-status role="status">'+help+'</small></div>';
   }
   function noteEditor(e,expanded=false){
    const note=e.note||'',id='vocab-note-'+(++noteId),wordKey=key(e.s,e.k);
-   const hasNote=!!note.trim(),unsaved=unsavedNotes.has(wordKey),showPreview=hasNote&&!unsaved;
-   const status=unsaved?'未能保存，请先复制笔记或重试':note?'已保存到本机':'输入后自动保存到本机';
-   return '<details class="vocab-note-editor" '+(expanded&&hasNote?'open':'')+'>'+
-    '<summary><span>我的笔记</span><small data-note-summary>'+(hasNote?'已写笔记':'写下自己的理解')+'</small></summary>'+
+   const filled=hasNote(e),unsaved=unsavedNotes.has(wordKey),showPreview=filled&&!unsaved;
+   const status=unsaved?'未能保存，请先复制笔记或重试':filled?'已保存到本机':'输入后自动保存到本机';
+   return '<details class="vocab-note-editor" data-note-mode="'+(showPreview?'preview':'edit')+'" '+(expanded&&filled?'open':'')+'>'+
+    '<summary><span>我的笔记</span><small data-note-summary>'+noteSummary(e)+'</small></summary>'+
     '<div class="vocab-note-body"><div class="vocab-note-toolbar">'+
     '<div class="vocab-note-switch" role="group" aria-label="笔记显示方式">'+
     '<button type="button" data-vocab-action="note-view" data-note-view="edit" aria-pressed="'+!showPreview+'">编辑</button>'+
@@ -87,7 +110,8 @@
     '<div data-note-edit '+(showPreview?'hidden':'')+'>'+
     '<label class="screen-only" for="'+id+'">我的笔记：'+esc(e.s)+'</label>'+
     '<textarea id="'+id+'" data-vocab-note="'+esc(wordKey)+'" rows="4" maxlength="'+noteLimit+'" spellcheck="false" placeholder="写笔记或粘贴 Markdown，例如 **加粗**、- 列表。">\n'+esc(note)+'</textarea></div>'+
-    '<div class="vocab-note-markdown study-prose" data-note-preview '+(showPreview?'':'hidden')+'>'+(showPreview?renderNote(note):'')+'</div>'+
+    '<div class="vocab-note-markdown study-prose" data-note-preview '+(showPreview?'':'hidden')+'>'+(showPreview?renderNote(note,!!e.noteImages?.length):'')+'</div>'+
+    galleryHTML(e,true)+(screenshots?imageControls(e):'')+
     '<div class="vocab-note-footer"><span data-note-status role="status" aria-live="polite" class="'+(unsaved?'note-save-error':'')+'">'+status+'</span>'+
     '<span data-note-count>'+note.length+' / '+noteLimit+'</span></div>'+
     '<button class="vocab-link" data-vocab-action="retry-note" '+(unsaved?'':'hidden')+'>重试保存</button></div></details>';
@@ -97,7 +121,8 @@
    const previewing=button.dataset.noteView==='preview';
    const input=editor.querySelector('[data-vocab-note]');
    const preview=editor.querySelector('[data-note-preview]');
-   if(previewing)preview.innerHTML=renderNote(input.value);
+   if(previewing)preview.innerHTML=renderNote(input.value,!!find(input.dataset.vocabNote)?.noteImages?.length);
+   editor.dataset.noteMode=button.dataset.noteView;
    editor.querySelector('[data-note-edit]').hidden=previewing;
    preview.hidden=!previewing;
    for(const toggle of editor.querySelectorAll('[data-note-view]')){
@@ -116,18 +141,139 @@
    const status=editor.querySelector('[data-note-status]');if(status.textContent!==message)status.textContent=message;
    status.classList.toggle('note-save-error',!saved);
    editor.querySelector('[data-note-count]').textContent=e.note.length+' / '+noteLimit;
-   editor.querySelector('[data-note-summary]').textContent=e.note.trim()?'已写笔记':'写下自己的理解';
+   editor.querySelector('[data-note-summary]').textContent=noteSummary(e);
    editor.querySelector('[data-vocab-action="retry-note"]').hidden=saved;
   }
   function practiceNote(e,answered){
-   if(!e?.note?.trim())return '';
+   if(!hasNote(e))return '';
    return '<details class="vocab-practice-note" '+(answered?'open':'')+'><summary>'+(answered?'我的笔记':'看我的笔记（提示）')+'</summary>'+
-    '<div class="study-prose">'+renderNote(e.note)+'</div></details>';
+    '<div class="study-prose">'+renderNote(e.note||'',!!e.noteImages?.length)+'</div>'+galleryHTML(e)+'</details>';
+  }
+  async function renderGallery(gallery){
+   const entry=find(gallery.dataset.noteGallery);
+   const ids=entry?.noteImages;
+   if(!ids?.length){gallery.replaceChildren();return;}
+   let records=[];
+   try{records=await screenshots.read(ids);}catch{}
+   if(!gallery.isConnected||find(gallery.dataset.noteGallery)?.noteImages!==ids)return;
+   const data=new Map(records.map(record=>[record.id,record.data]));
+   gallery.innerHTML=ids.map((id,index)=>{
+    const number=index+1;
+    const image=data.get(id);
+    const preview=image
+     ? '<button type="button" class="vocab-image-preview" data-vocab-action="view-image" data-image-id="'+id+'" aria-label="放大截图 '+number+'"><img src="'+image+'" alt="截图 '+number+'"></button>'
+     : '<p class="hint">这张截图暂时无法读取。</p>';
+    const remove=gallery.hasAttribute('data-note-gallery-editable')
+     ? '<button type="button" class="vocab-link vocab-image-remove" data-vocab-action="remove-image" data-image-id="'+id+'" aria-label="移除截图 '+number+'">移除</button>'
+     : '';
+    return '<figure>'+preview+remove+'</figure>';
+   }).join('');
+  }
+  function loadImages(container){
+   if(screenshots)for(const gallery of container.querySelectorAll('[data-note-gallery]'))renderGallery(gallery);
+  }
+  function refreshImages(entry){
+   const wordKey=key(entry.s,entry.k);
+   for(const gallery of document.querySelectorAll('[data-note-gallery]')){
+    if(gallery.dataset.noteGallery!==wordKey)continue;
+    const editor=gallery.closest('.vocab-note-editor');
+    if(editor){
+     editor.querySelector('[data-note-summary]').textContent=noteSummary(entry);
+     editor.querySelector('[data-vocab-action="pick-image"]').disabled=entry.noteImages?.length>=screenshots.maxPerNote;
+     if(!entry.note?.trim()){
+      editor.querySelector('[data-note-preview]').innerHTML=renderNote('',!!entry.noteImages?.length);
+      if(!unsavedNotes.has(wordKey))editor.querySelector('[data-note-status]').textContent=hasNote(entry)?'已保存到本机':'输入后自动保存到本机';
+     }
+    }
+    renderGallery(gallery);
+   }
+  }
+  function imageStatus(editor,message,error=false){
+   if(editor.isConnected&&editor.closest('dialog')?.open){
+    const status=editor.querySelector('[data-note-image-status]');
+    status.textContent=message;
+    status.classList.toggle('note-image-error',error);
+   }else if(error)notify(message);
+  }
+  async function attachImages(editor,files){
+   const wordKey=editor.querySelector('[data-vocab-note]').dataset.vocabNote,entry=find(wordKey);
+   if(!entry||addingImages.has(wordKey)||!files.length)return;
+   const remaining=screenshots.maxPerNote-(entry.noteImages?.length||0);
+   if(files.length>remaining){
+    imageStatus(editor,remaining?'这条笔记还可以添加 '+remaining+' 张截图。':'一条笔记最多附 8 张截图。',true);
+    return;
+   }
+   addingImages.add(wordKey);
+   imageStatus(editor,'正在保存截图…');
+   const records=[];
+   let wroteImages=false;
+   try{
+    for(const file of files){
+     const data=typeof file==='string'?file:await screenshots.prepare(file);
+     if(!screenshots.validData(data))throw new Error('无法读取这张截图。');
+     records.push({id:screenshots.createId(),data});
+    }
+    await screenshots.save(records);
+    wroteImages=true;
+    if(find(wordKey)!==entry)throw new Error('这条笔记已经更换，请重新添加截图。');
+    const previous=entry.noteImages;
+    entry.noteImages=[...(previous||[]),...records.map(record=>record.id)];
+    if(!persist()){
+     entry.noteImages=previous;
+     throw new Error('截图未能保存，请检查设备存储空间。');
+    }
+   }catch(error){
+    if(wroteImages)await screenshots.remove(records.map(record=>record.id)).catch(()=>{});
+    const message=error instanceof DOMException?'截图未能保存，请检查设备存储空间。':error.message;
+    imageStatus(editor,message,true);
+    return;
+   }finally{
+    addingImages.delete(wordKey);
+   }
+   refreshImages(entry);
+   imageStatus(editor,'截图已保存到本机');
+  }
+  function chooseImage(editor){
+   if(typeof window.Android?.chooseNoteImage!=='function'){
+    editor.querySelector('[data-note-file]').click();
+    return;
+   }
+   if(pendingPicker)return;
+   const token=screenshots.createId();
+   pendingPicker={editor,token};
+   window.Android.chooseNoteImage(token);
+  }
+  window.onNativeNoteImage=(token,data,error)=>{
+   if(pendingPicker?.token!==token)return;
+   const {editor}=pendingPicker;
+   pendingPicker=null;
+   if(error)imageStatus(editor,error,true);
+   else if(data)attachImages(editor,[data]);
+  };
+  function removeImage(button){
+   const gallery=button.closest('[data-note-gallery]'),entry=find(gallery.dataset.noteGallery);
+   const id=button.dataset.imageId,previous=entry?.noteImages;
+   if(!previous?.includes(id)||addingImages.has(gallery.dataset.noteGallery))return;
+   entry.noteImages=previous.filter(value=>value!==id);
+   if(!persist()){
+    entry.noteImages=previous;
+    return;
+   }
+   if(!entries().some(e=>e.noteImages?.includes(id)))screenshots.remove([id]).catch(()=>{});
+   refreshImages(entry);
+   imageStatus(gallery.closest('.vocab-note-editor'),'已移除截图');
+  }
+  function viewImage(button){
+   const image=button.querySelector('img');
+   if(!image)return;
+   showDialog('note-image-dialog','笔记截图','<img class="vocab-image-full" src="'+esc(image.src)+'" alt="'+esc(image.alt)+'">');
   }
   function updateControls(){document.querySelectorAll('[data-vocab-control]').forEach(el=>{const e=find(el.dataset.vocabControl);if(e)el.outerHTML=control(e);});}
   function render(body){
    showDialog('vocabulary-dialog','我的生词本',body);
-   document.querySelector('#vocabulary-dialog').classList.add('vocabulary-dialog');
+   const dialog=document.querySelector('#vocabulary-dialog');
+   dialog.classList.add('vocabulary-dialog');
+   loadImages(dialog);
   }
   function status(e){return e.pinned?'手动加入':active(e)?'反复查词':e.masteredAt?'已移出复习':'查词记录';}
   function row(e){
@@ -137,7 +283,7 @@
    return '<article class="vocab-row"><div class="vocab-row-top"><div><strong lang="ja">'+esc(e.s)+'</strong><span lang="ja">'+esc(e.k)+'</span></div><b class="vocab-frequency">查了 '+e.lookups+' 次</b></div><p class="vocab-meta">'+status(e)+(e.correct||e.wrong?' · 练习答对 '+e.correct+' 次 / 答错 '+e.wrong+' 次':'')+'</p><details><summary>原句与释义</summary>'+(source?'<p lang="ja" class="vocab-source">'+context+'</p><p>'+esc(info.definition)+'</p><button class="outline" data-vocab-action="source" data-vocab-key="'+id+'">回到第 '+(source.line+1)+' 句</button>':'<p>这条记录的原文位置已变化，暂时无法定位。</p>')+'</details>'+noteEditor(e,filter==='notes')+'<div class="vocab-row-actions"><button class="vocab-link" data-vocab-action="toggle" data-vocab-key="'+id+'">'+(active(e)?'已熟悉，移出复习':'加入重点复习')+'</button></div></article>';
   }
   function list(){
-   const c=counts(),all=entries().filter(e=>filter==='all'||(filter==='notes'?!!e.note?.trim():active(e))).slice().sort((a,b)=>order==='recent'?b.lastSeen-a.lastSeen:b.lookups-a.lookups||b.wrong-a.wrong||b.lastSeen-a.lastSeen);
+   const c=counts(),all=entries().filter(e=>filter==='all'||(filter==='notes'?hasNote(e):active(e))).slice().sort((a,b)=>order==='recent'?b.lastSeen-a.lastSeen:b.lookups-a.lookups||b.wrong-a.wrong||b.lastSeen-a.lastSeen);
    render('<p class="vocab-intro">继续往后读就好。点开一个词的释义记 1 次，同词同读音合并计数；查满 '+threshold+' 次自动加入重点复习，也能手动加入。</p><div class="vocab-stats"><span><b>'+c.active+'</b> 个待复习</span><span><b>'+c.tracked+'</b> 个查过的词</span><span><b>'+c.lookups+'</b> 次查词</span></div><div class="vocab-list-tools"><div role="group" aria-label="生词本范围"><button class="toggle '+(filter==='active'?'on':'')+'" aria-pressed="'+(filter==='active')+'" data-vocab-action="active">重点复习</button><button class="toggle '+(filter==='all'?'on':'')+'" aria-pressed="'+(filter==='all')+'" data-vocab-action="all">全部查词记录</button><button class="toggle '+(filter==='notes'?'on':'')+'" aria-pressed="'+(filter==='notes')+'" data-vocab-action="notes">有笔记</button></div><label>排序 <select data-vocab-order aria-label="生词排序"><option value="frequency" '+(order==='frequency'?'selected':'')+'>查词次数最多</option><option value="recent" '+(order==='recent'?'selected':'')+'>最近查过</option></select></label></div><button class="primary vocab-practice-start" data-vocab-action="practice" '+(!c.active?'disabled':'')+'>只练不熟悉的词</button><p class="hint">每轮最多 10 题，全是点击选择；题目与选项随机。答错的词保留复习，答对不会自动替你移出。</p><div class="vocab-list">'+(all.length?all.slice(0,limit).map(row).join(''):'<p class="vocab-empty">'+(filter==='active'?'还没有待复习的词。读书时点「不熟悉，加入生词本」，或重复查同一个词 '+threshold+' 次。':filter==='notes'?'还没有自己的笔记。查词时展开「我的笔记」，写下你自己的理解吧。':'从本次更新开始记录。先回小说点开一个不认识的词吧。')+'</p>')+'</div>'+(all.length>limit?'<button class="outline" data-vocab-action="more">再显示 40 个</button>':'')+'<p class="vocab-storage-note">统计从本次更新开始，保存在当前设备。悬停、朗读和复习答题不增加查词次数；导出进度时会一并备份。</p>');
   }
   function open(){stop();document.querySelector('#word-dialog[open]')?.close();filter='active';limit=40;round=null;list();}
@@ -170,6 +316,9 @@
    const button=event.target.closest('[data-vocab-action]');if(!button||button.disabled)return;
    const action=button.dataset.vocabAction;
    if(action==='note-view'){showNoteView(button);return;}
+   if(action==='pick-image'){chooseImage(button.closest('.vocab-note-editor'));return;}
+   if(action==='view-image'){viewImage(button);return;}
+   if(action==='remove-image'){removeImage(button);return;}
    const e=find(button.dataset.vocabKey);
    if(action==='retry-note'){saveNote(button.closest('.vocab-note-editor').querySelector('[data-vocab-note]'));return;}
    if(action==='open'){open();return;}
@@ -188,8 +337,22 @@
     if(action==='master-next'){const entry=find(q.vocabKey);if(entry)master(entry);changed();}next();
    }
   });
-  document.addEventListener('change',e=>{if(e.target.matches('[data-vocab-order]')){order=e.target.value==='recent'?'recent':'frequency';list();}});
+  document.addEventListener('change',e=>{
+   if(e.target.matches('[data-vocab-order]')){order=e.target.value==='recent'?'recent':'frequency';list();}
+   if(e.target.matches('[data-note-file]')){
+    const files=Array.from(e.target.files);
+    e.target.value='';
+    attachImages(e.target.closest('.vocab-note-editor'),files);
+   }
+  });
+  document.addEventListener('paste',event=>{
+   if(!screenshots||!event.target.matches('[data-vocab-note]'))return;
+   const files=Array.from(event.clipboardData?.files||[]).filter(file=>file.type.startsWith('image/'));
+   if(!files.length)return;
+   event.preventDefault();
+   attachImages(event.target.closest('.vocab-note-editor'),files);
+  });
   for(const type of ['input','compositionend'])document.addEventListener(type,e=>{if(e.target.matches('[data-vocab-note]'))saveNote(e.target);});
-  return {record,open,counts,updateBadges,noteHTML};
+  return {record,open,counts,updateBadges,noteHTML,loadImages};
  };
 })();

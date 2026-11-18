@@ -49,4 +49,16 @@
 .vocab-practice-note>summary{cursor:pointer;color:#50643f}
 .vocab-practice-note>.study-prose{margin-top:10px}
 .vocab-list-tools [role=group]{flex-wrap:wrap}
+.vocab-note-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin:12px 0}
+.vocab-note-gallery:empty,.vocab-note-markdown:empty{display:none}
+.vocab-note-gallery figure{min-width:0;margin:0}
+.vocab-image-preview{display:block;width:100%;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:7px;background:white;cursor:zoom-in}
+.vocab-image-preview img{display:block;width:100%;max-height:220px;object-fit:contain;object-position:top}
+.vocab-image-remove{margin-top:4px;min-height:34px}
+.vocab-note-editor[data-note-mode=preview] .vocab-image-remove{display:none}
+.vocab-image-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-top:12px}
+.vocab-image-tools small{font-size:12px;color:var(--muted)}
+.vocab-image-tools .note-image-error{color:#a3432f}
+.vocab-image-full{display:block;width:100%;height:auto}
+#note-image-dialog{width:min(960px,94vw);max-width:94vw}
 @media(max-width:600px){.vocabulary-dialog .drawer-inner{padding:18px}.vocab-list-tools{align-items:flex-start}.vocab-stats{gap:12px;font-size:11px}.vocab-stats b{font-size:21px}.vocab-row-top strong{font-size:25px}.vocab-word-actions>.outline{font-size:13px;padding:10px}.vocabulary-dialog .quiz-focus{font-size:28px}.novel-reader{grid-template-rows:auto 34px minmax(0,1fr) calc(79px + env(safe-area-inset-bottom))}.novel-tools{flex-wrap:wrap;justify-content:center}.novel-top{min-height:88px}.top-actions{flex-wrap:wrap;justify-content:flex-end}}

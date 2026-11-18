@@ -1,6 +1,6 @@
 {
   "name": "tjts-web",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "private": true,
   "type": "module",
   "description": "听到涛声逐句学习网页版（不含音频和插图）",
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node umi-reader/scripts/serve.mjs",
-    "check": "node umi-reader/scripts/check-study-groups.mjs && node umi-reader/scripts/check-fullbook-review-engine.mjs && node umi-reader/scripts/check-fullbook-review.mjs && node umi-reader/scripts/check-counter-readings.mjs && node umi-reader/scripts/check-quiz.mjs && node umi-reader/scripts/check-text-web.mjs && node umi-reader/scripts/check-challenge-quiz.mjs && node umi-reader/scripts/check-translation-review.mjs && node umi-reader/scripts/check-study-analysis.mjs && node umi-reader/scripts/check-particle-lessons.mjs && node umi-reader/scripts/check-walkthroughs.mjs && node umi-reader/scripts/check-particle-combinations.mjs && node umi-reader/scripts/check-grammar-teaching.mjs && node umi-reader/scripts/check-base-reading.mjs && node umi-reader/scripts/check-word-connections.mjs && node umi-reader/scripts/check-sentence-chunks.mjs && node umi-reader/scripts/check-deep-chunk-grammar.mjs && node umi-reader/scripts/check-plain-connections.mjs && node umi-reader/scripts/check-action-connections.mjs && node umi-reader/scripts/check-form-contrasts.mjs && node umi-reader/scripts/check-te-chains.mjs && node umi-reader/scripts/check-context-applications.mjs && node umi-reader/scripts/check-plain-explanations.mjs && node umi-reader/scripts/check-sentence-pattern-explanations.mjs && node umi-reader/scripts/check-novel-reader.mjs && node umi-reader/scripts/check-vocabulary.mjs && node umi-reader/scripts/check-vocabulary-notes.mjs",
+    "check": "node umi-reader/scripts/check-study-groups.mjs && node umi-reader/scripts/check-fullbook-review-engine.mjs && node umi-reader/scripts/check-fullbook-review.mjs && node umi-reader/scripts/check-counter-readings.mjs && node umi-reader/scripts/check-quiz.mjs && node umi-reader/scripts/check-text-web.mjs && node umi-reader/scripts/check-challenge-quiz.mjs && node umi-reader/scripts/check-translation-review.mjs && node umi-reader/scripts/check-study-analysis.mjs && node umi-reader/scripts/check-particle-lessons.mjs && node umi-reader/scripts/check-walkthroughs.mjs && node umi-reader/scripts/check-particle-combinations.mjs && node umi-reader/scripts/check-grammar-teaching.mjs && node umi-reader/scripts/check-base-reading.mjs && node umi-reader/scripts/check-word-connections.mjs && node umi-reader/scripts/check-sentence-chunks.mjs && node umi-reader/scripts/check-deep-chunk-grammar.mjs && node umi-reader/scripts/check-plain-connections.mjs && node umi-reader/scripts/check-action-connections.mjs && node umi-reader/scripts/check-form-contrasts.mjs && node umi-reader/scripts/check-te-chains.mjs && node umi-reader/scripts/check-context-applications.mjs && node umi-reader/scripts/check-plain-explanations.mjs && node umi-reader/scripts/check-sentence-pattern-explanations.mjs && node umi-reader/scripts/check-novel-reader.mjs && node umi-reader/scripts/check-vocabulary.mjs && node umi-reader/scripts/check-vocabulary-notes.mjs && node umi-reader/scripts/check-reader-additions.mjs",
     "check:challenge": "node umi-reader/scripts/check-challenge-quiz.mjs",
     "check:translations": "node umi-reader/scripts/check-translation-review.mjs",
     "check:analysis": "node umi-reader/scripts/check-study-analysis.mjs",
@@ -30,7 +30,8 @@
     "check:sentence-patterns": "node umi-reader/scripts/check-sentence-pattern-explanations.mjs",
     "check:novel": "node umi-reader/scripts/check-novel-reader.mjs",
     "check:vocabulary": "node umi-reader/scripts/check-vocabulary.mjs",
-    "check:vocabulary-notes": "node umi-reader/scripts/check-vocabulary-notes.mjs"
+    "check:vocabulary-notes": "node umi-reader/scripts/check-vocabulary-notes.mjs",
+    "check:reader-additions": "node umi-reader/scripts/check-reader-additions.mjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"

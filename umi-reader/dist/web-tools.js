@@ -19,8 +19,32 @@
   result.vocabulary=window.UMI_VOCABULARY?.clean(value.vocabulary,total)||[];
   return result;
  }
+ const maxBackupBytes=64*1024*1024;
+ const imageIds=state=>[...new Set((state.vocabulary||[]).flatMap(entry=>entry.noteImages||[]))];
+ function checkImages(state,records){
+  const wanted=new Set(imageIds(state)),validData=window.UMI_NOTE_IMAGES?.validData;
+  if(!wanted.size)return [];
+  const matched=new Map();
+  for(const record of Array.isArray(records)?records:[]){
+   if(record&&wanted.has(record.id)&&validData?.(record.data))matched.set(record.id,{id:record.id,data:record.data});
+  }
+  if(matched.size!==wanted.size)throw new Error('有笔记截图无法读取，无法完整保存或恢复这份备份。');
+  return [...matched.values()];
+ }
+ function readBackup(text,total){
+  const backup=JSON.parse(text);
+  if(backup.format!=='umi-reading-progress'||backup.version!==1||backup.book!=='umi-volume-1-2640')throw new Error('请选择这本书导出的阅读进度备份。');
+  const state=clean(backup.state,total);
+  return {state,images:checkImages(state,backup.noteImages)};
+ }
  window.UMI_WEB={
-  encode(state,total){return JSON.stringify({format:'umi-reading-progress',version:1,book:'umi-volume-1-2640',savedAt:new Date().toISOString(),state:clean(state,total)},null,2);},
-  decode(text,total){const backup=JSON.parse(text);if(backup.format!=='umi-reading-progress'||backup.version!==1||backup.book!=='umi-volume-1-2640')throw new Error('请选择这本书导出的阅读进度备份。');return clean(backup.state,total);}
+  maxBackupBytes,imageIds,readBackup,
+  encode(state,total,images=[]){
+   const progress=clean(state,total),attachments=checkImages(progress,images);
+   const backup={format:'umi-reading-progress',version:1,book:'umi-volume-1-2640',savedAt:new Date().toISOString(),state:progress};
+   if(attachments.length)backup.noteImages=attachments;
+   return JSON.stringify(backup,null,2);
+  },
+  decode(text,total){return readBackup(text,total).state;}
  };
 })();
