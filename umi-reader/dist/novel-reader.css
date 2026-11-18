@@ -1,0 +1,39 @@
+body.novel-mode{background:#f6f2e9;color:#34312c;overflow:hidden}
+.novel-reader{--novel-font:22px;max-width:1040px;height:100vh;height:100dvh;margin:0 auto;padding:0 40px;display:grid;grid-template-rows:62px 42px minmax(0,1fr) 86px;color:#34312c;background:#f6f2e9}
+.novel-reader button{font-family:inherit;color:inherit;background:transparent;border:0;border-radius:5px;padding:8px 10px;min-height:38px;cursor:pointer;font-size:13px;letter-spacing:.02em}
+.novel-reader button:hover{background:#e9e3d7}
+.novel-reader button:disabled{opacity:.32;cursor:default;background:transparent}
+.novel-reader button:focus-visible,.novel-word:focus-visible{outline:2px solid #917b56;outline-offset:3px}
+.novel-top{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #ddd6c8}
+.novel-book-name{font-family:reader,"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;font-size:19px;letter-spacing:.12em;white-space:nowrap}
+.novel-tools{display:flex;align-items:center;gap:7px}
+.novel-font-controls{display:flex;gap:0;border-inline:1px solid #e3ddcf;padding:0 4px}
+.novel-reader .novel-exit{border:1px solid #d5cbbb;margin-left:3px}
+.novel-reader [aria-pressed="true"]{background:#e6ddcd}
+.novel-running-head{display:flex;justify-content:space-between;align-items:center;color:#948879;font-size:11px;letter-spacing:.13em}
+.novel-stage{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden}
+.novel-flow{writing-mode:vertical-rl;text-orientation:mixed;direction:ltr;font-family:reader,"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;font-size:var(--novel-font);line-height:2;letter-spacing:.06em;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-x pinch-zoom;line-break:strict;word-break:normal;overflow-wrap:normal;padding:0;margin:0;font-weight:400;outline:none}
+.novel-flow::-webkit-scrollbar{display:none}
+.novel-flow p{margin:0;padding:0;text-indent:1em;line-height:2;white-space:normal}
+.novel-flow p.novel-dialogue{text-indent:0}
+.novel-end-space{height:100%;width:0;padding:0;margin:0;pointer-events:none}
+.novel-word{display:inline;padding:0;margin:0;border:0;border-radius:2px;background:none;color:inherit;cursor:pointer;text-decoration:none;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.novel-word:hover{background:#e8deca}
+.novel-word ruby{ruby-position:over;ruby-align:center}
+.novel-word rt{font-size:.46em;letter-spacing:0;color:#8b7d68;font-weight:400}
+.novel-tcy{text-combine-upright:all;letter-spacing:0}
+.novel-footer{padding:20px 0 10px}
+.novel-progress{height:1px;background:#e2dbcd}
+.novel-progress span{display:block;height:100%;background:#aa9270;float:right}
+.novel-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:9px}
+.novel-pagination>div{text-align:center;font-size:12px;color:#756a5c;font-variant-numeric:tabular-nums}
+.novel-pagination small{display:block;font-size:10px;color:#a69a89;margin-top:5px}
+.novel-pagination button{min-width:90px}
+.novel-contents{display:grid;gap:8px}
+.novel-contents button{text-align:left;background:#f7f4ed;padding:15px;border:1px solid #e7e0d2;color:#4e493f;font-size:14px;border-radius:7px}
+.novel-contents button small{display:inline-block;width:32px;color:#a39175}
+.novel-contents [aria-current="true"]{border-color:#aa9270;background:#eee5d7}
+#open-novel{white-space:nowrap}
+@media(max-width:600px){.topbar{height:auto;min-height:68px;flex-wrap:wrap;row-gap:8px;padding-block:10px}.topbar .top-actions{margin-left:auto}.topbar #open-kana span{display:none}}
+@media(max-width:600px){.novel-reader{padding:0 18px;grid-template-rows:88px 34px minmax(0,1fr) calc(79px + env(safe-area-inset-bottom));}.novel-top{flex-wrap:wrap;justify-content:center;gap:0;padding:8px 0 5px}.novel-book-name{font-size:17px;width:100%;text-align:center;line-height:25px}.novel-tools{gap:3px}.novel-reader button{font-size:12px;padding:6px 9px;min-height:35px}.novel-running-head{font-size:10px;letter-spacing:.03em}.novel-footer{padding:15px 0 max(10px,env(safe-area-inset-bottom))}.novel-pagination button{min-width:75px}.novel-pagination small{font-size:9px}.top-actions{gap:5px}.top-actions #open-novel{font-size:12px;padding-inline:8px}}
+@media(max-height:480px){.novel-reader{grid-template-rows:44px 26px minmax(0,1fr) 56px}.novel-top{flex-wrap:nowrap;padding:0;justify-content:space-between}.novel-book-name{width:auto}.novel-pagination small{display:none}.novel-footer{padding:8px 0}.novel-pagination{padding-top:2px}}

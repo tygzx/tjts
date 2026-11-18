@@ -6,6 +6,10 @@
   const result={index:value.index,done:[...new Set(value.done.filter(n=>Number.isInteger(n)&&n>=0&&n<total))],sentencePlayback:{}};
   for(const key of ['ruby','romaji','kana','meaning','segmented','illustrations','roleVoices'])if(typeof value[key]==='boolean')result[key]=value[key];
   if(['chunks','words'].includes(value.sentenceMode))result.sentenceMode=value.sentenceMode;
+  if(['study','novel'].includes(value.readingMode))result.readingMode=value.readingMode;
+  if(typeof value.novelRuby==='boolean')result.novelRuby=value.novelRuby;
+  if([18,20,22,24,26,28,30].includes(value.novelFont))result.novelFont=value.novelFont;
+  if(Number.isInteger(value.novelPosition?.line)&&value.novelPosition.line>=0&&value.novelPosition.line<total&&Number.isInteger(value.novelPosition.offset)&&value.novelPosition.offset>=0&&value.novelPosition.offset<=100000)result.novelPosition={line:value.novelPosition.line,offset:value.novelPosition.offset};
   if(['basic','challenge'].includes(value.quizDifficulty))result.quizDifficulty=value.quizDifficulty;
   if([.6,.8,1].includes(value.rate))result.rate=value.rate;
   if(value.sentencePlayback&&typeof value.sentencePlayback==='object')for(const [key,setting] of Object.entries(value.sentencePlayback)){
