@@ -250,9 +250,33 @@
  }
 
 
+ function patternPartLabel(part){
+  const reading=part.kana?'<small class="pattern-part-reading" lang="ja">'+esc(part.kana)+'</small>':'';
+  return '<b lang="ja">'+esc(part.ja)+'</b>'+reading;
+ }
+ function patternPartExplanation(part){
+  const explanation='<p class="pattern-part-meaning" lang="zh-CN">'+esc(part.zh)+'</p>';
+  if(!part.forms?.length)return explanation;
+  const steps=part.forms.map(step=>'<li><b lang="ja">'+esc(step.ja)+'</b>'+formReadingHTML(step.ja,step.kana)+'<p lang="zh-CN">'+esc(step.zh)+'</p></li>');
+  return explanation+'<ol class="pattern-forms" aria-label="接法与变形">'+steps.join('')+'</ol>';
+ }
+ function wordPatternFocusHTML(part,surface){
+  const label=part.ja===surface?'':'<p class="pattern-part-source">'+patternPartLabel(part)+'</p>';
+  return '<section class="word-pattern-focus" aria-label="本句用法"><h3>本句用法</h3>'+label+patternPartExplanation(part)+'</section>';
+ }
  function sentencePatternHTML(n,showMeaning=true){
   const p=n.pattern;
-  return '<section class="sentence-pattern-lesson" data-pattern-quote="'+esc(n.quote)+'">'+(showMeaning?'<p class="pattern-source" lang="ja">'+esc(n.quote)+'</p><p class="pattern-meaning">'+esc(n.meaning)+'</p>':'')+'<h3>1. 逐词解析</h3><ul class="pattern-words">'+n.parts.map(x=>'<li><b lang="ja">'+esc(x.ja)+'</b>：'+esc(x.zh)+'</li>').join('')+'</ul><h3>2. 核心句型：<span lang="ja">'+esc(p.title)+'</span></h3><p>'+esc(p.meaning)+'</p><ul class="pattern-structure">'+p.structure.map(([ja,zh])=>'<li><b>'+esc(ja)+'</b>：'+esc(zh)+'</li>').join('')+'</ul><p class="pattern-example-label">对照例句</p>'+p.examples.map(e=>'<div class="pattern-example"><p lang="ja">'+esc(e.ja)+'</p><p lang="zh-CN">'+esc(e.zh)+'</p></div>').join('')+'<h3>3. '+esc(n.whyTitle)+'</h3><p class="pattern-why">'+esc(n.why)+'</p><h3>4. 结合本文</h3><p class="pattern-context">'+esc(n.context)+'</p><div class="pattern-recall"><h3>5. 一句话记住</h3><p>'+esc(n.recall)+'</p></div></section>';
+  const meaning=showMeaning?'<p class="pattern-source" lang="ja">'+esc(n.quote)+'</p><p class="pattern-meaning">'+esc(n.meaning)+'</p>':'';
+  const words=n.parts.map(part=>'<li>'+patternPartLabel(part)+patternPartExplanation(part)+'</li>').join('');
+  const structure=p.structure.map(([ja,zh])=>'<li><b>'+esc(ja)+'</b><p class="pattern-part-meaning">'+esc(zh)+'</p></li>').join('');
+  const examples=p.examples.map(e=>'<div class="pattern-example"><p lang="ja">'+esc(e.ja)+'</p><p lang="zh-CN">'+esc(e.zh)+'</p></div>').join('');
+  return '<section class="sentence-pattern-lesson" data-pattern-quote="'+esc(n.quote)+'">'+meaning+
+   '<h3>1. 逐词解析</h3><ul class="pattern-words">'+words+'</ul>'+
+   '<h3>2. 核心句型 · <span>'+esc(p.title)+'</span></h3><p>'+esc(p.meaning)+'</p>'+
+   '<ul class="pattern-structure">'+structure+'</ul><p class="pattern-example-label">对照例句</p>'+examples+
+   '<h3>3. '+esc(n.whyTitle)+'</h3><p class="pattern-why">'+esc(n.why)+'</p>'+
+   '<h3>4. 结合本文</h3><p class="pattern-context">'+esc(n.context)+'</p>'+
+   '<div class="pattern-recall"><h3>5. 一句话记住</h3><p>'+esc(n.recall)+'</p></div></section>';
  }
  function sentencePatternCardsHTML(notes){
   return notes.map(n=>'<details class="form-analysis sentence-pattern-card"><summary><span lang="ja">'+esc(n.quote)+'</span><small>'+esc(n.meaning)+'</small></summary>'+sentencePatternHTML(n,false)+'</details>').join('');
@@ -326,7 +350,15 @@
   const month=months.findIndex(([s,k])=>s===g.s&&k===g.k)+1;
   const definition=month?`${g.s}；${month} 月，一年中的第 ${month} 个月。`:groupDefinition;
   const usage=month?`表示月份时，「月」读作「がつ」。${groups[index+1]?.s==='に'?`本句「${g.s}に」中的「に」表示事情发生的时间，意思是“在${g.s}”。`:''}`:'';
-  dialog('word-dialog','词语解释',`<div class="word-zoom-card"><div class="word-zoom-text" lang="ja">${esc(g.s)}</div><p class="word-zoom-kana" lang="ja">${esc(g.k)}</p><p class="word-zoom-romaji" lang="en">${esc(g.r)}</p>${base!==g.s?`<p class="word-zoom-base">原形 <span lang="ja">${esc(base)}</span>${formReadingHTML(base,g.baseKana,true)}</p>`:''}</div>${vocabControl}<div class="word-zoom-size"><label for="word-zoom-size">字形大小</label><span aria-hidden="true">小</span><input id="word-zoom-size" type="range" min="32" max="128" step="4" value="${wordSize}"><span aria-hidden="true">大</span></div><p class="word-zoom-meaning"><span class="pos">${esc(g.p)}</span>${esc(definition)}${contextual?' <span class="pos">本句释义</span>':!reviewed&&!month?' <span class="auto" title="自动生成，尚未按本句核对">词义待核对</span>':''}</p>${vocabulary?.noteHTML(g.s,g.k)||''}${g.sentenceLesson||g.analyses?.some(a=>a.plain)?'':actionBriefHTML(g.actionLessons)}${g.analyses?.some(a=>a.layered)?'<p class="word-unit-note">这是一整块动词表达，里面还含有语法变化。下面拆开看。</p>':''}${g.sentenceLesson?sentencePatternHTML(g.sentenceLesson):combinationHTML(g,true)}${g.sentenceLesson?'<details class="plain-more"><summary>更多词形与读音</summary>':''}${g.analyses?.length?`<section class="word-analysis" aria-label="本句形式讲解">${analysisCardsHTML(g.analyses,true,new Set((g.actionLessons||[]).flatMap(x=>x.contrastKeys||[])))}</section>`:''}${g.sentenceLesson?'</details>':''}${g.actionLessons?.length?'<details class="plain-more"><summary>查看「を」和动作的详细接法</summary>'+actionLessonsHTML(g.actionLessons)+'</details>':''}${usage?`<p class="word-zoom-note">${esc(usage)}</p>`:''}${morph||extra.length||parts?`<details class="word-zoom-note grammar-reference"><summary>原有词形注记（选看）</summary>${esc(morph)}${parts?`<p class="word-parts" lang="ja">构成：${esc(parts)}</p>`:''}${extra.map(x=>`<p><b lang="ja">${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}</p>`).join('')}</details>`:''}${textOnly?'':`${particleLinksHTML(g.particleKeys)}<button class="primary word-zoom-play" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}听这个词</button>`}`);
+  const focus=g.sentencePart;
+  const wordMeaning=focus?wordPatternFocusHTML(focus,g.s):`<p class="word-zoom-meaning"><span class="pos">${esc(g.p)}</span>${esc(definition)}${contextual?' <span class="pos">本句释义</span>':!reviewed&&!month?' <span class="auto" title="自动生成，尚未按本句核对">词义待核对</span>':''}</p>`;
+  const fullLesson=g.sentenceLesson?sentencePatternHTML(g.sentenceLesson):'';
+  const wordLesson=focus?'<details class="plain-more"><summary>看整块的句型与例句</summary>'+fullLesson+'</details>':fullLesson||
+   (g.analyses?.some(a=>a.plain)?'':actionBriefHTML(g.actionLessons))+
+   (g.analyses?.some(a=>a.layered)?'<p class="word-unit-note">这是一整块动词表达，里面还含有语法变化。下面拆开看。</p>':'')+combinationHTML(g,true);
+  const wordAnalysis=g.analyses?.length?'<section class="word-analysis" aria-label="本句形式讲解">'+analysisCardsHTML(g.analyses,true,new Set((g.actionLessons||[]).flatMap(x=>x.contrastKeys||[])))+'</section>':'';
+  const supplement=fullLesson&&wordAnalysis?'<details class="plain-more"><summary>更多词形与读音</summary>'+wordAnalysis+'</details>':wordAnalysis;
+  dialog('word-dialog','词语解释',`<div class="word-zoom-card"><div class="word-zoom-text" lang="ja">${esc(g.s)}</div><p class="word-zoom-kana" lang="ja">${esc(g.k)}</p><p class="word-zoom-romaji" lang="en">${esc(g.r)}</p>${base!==g.s?`<p class="word-zoom-base">原形 <span lang="ja">${esc(base)}</span>${formReadingHTML(base,g.baseKana,true)}</p>`:''}</div>${vocabControl}<div class="word-zoom-size"><label for="word-zoom-size">字形大小</label><span aria-hidden="true">小</span><input id="word-zoom-size" type="range" min="32" max="128" step="4" value="${wordSize}"><span aria-hidden="true">大</span></div>${wordMeaning}${vocabulary?.noteHTML(g.s,g.k)||''}${wordLesson}${supplement}${g.actionLessons?.length?'<details class="plain-more"><summary>查看「を」和动作的详细接法</summary>'+actionLessonsHTML(g.actionLessons)+'</details>':''}${usage?`<p class="word-zoom-note">${esc(usage)}</p>`:''}${morph||extra.length||parts?`<details class="word-zoom-note grammar-reference"><summary>原有词形注记（选看）</summary>${esc(morph)}${parts?`<p class="word-parts" lang="ja">构成：${esc(parts)}</p>`:''}${extra.map(x=>`<p><b lang="ja">${esc(x.s)}</b>：${esc(x.d||'连接后续表达。')}</p>`).join('')}</details>`:''}${textOnly?'':`${particleLinksHTML(g.particleKeys)}<button class="primary word-zoom-play" data-speak-group="${g.i}" aria-label="朗读 ${esc(g.s)}">${icon('audio')}听这个词</button>`}`);
   $('#word-dialog').style.setProperty('--word-zoom-size',wordSize+'px');
  }
  function grammarHTML(){

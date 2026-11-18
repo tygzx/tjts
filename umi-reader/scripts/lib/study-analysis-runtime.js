@@ -321,6 +321,7 @@
   for(const g of groups){
    const start=offset;offset+=g.s.length;
    g.sentenceLesson=sentencePatternContexts.get(text)?.find(n=>n.start<offset&&n.end>start)||null;
+   g.sentencePart=g.sentenceLesson?.parts.find(p=>p.start<=start&&p.end>=offset)||null;
    const details=(entry?.items||[]).filter(a=>a.start<offset&&a.end>start).map(a=>({...a,kind:'本句逐项讲解'}));
    const own=feelingAnalysis(g)||regular(g)||adjectiveOrCopula(g)||derivedNoun(g)||likenessForm(g);
    const block=walk?.blocks.find(x=>x.start<=start&&x.end>=offset),blockIndex=walk?.blocks.indexOf(block);

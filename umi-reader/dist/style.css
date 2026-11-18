@@ -264,4 +264,14 @@
 .pattern-example-label{font-weight:600}.pattern-example{border-left:3px solid #a5c2ce;padding:5px 14px;margin:12px 0}.pattern-example p{margin:4px 0}.pattern-example p[lang=ja]{font-size:18px}.pattern-example p[lang=zh-CN]{color:#416473}
 .pattern-recall{background:#edf5f8;border-radius:9px;padding:14px 16px;margin-top:24px}.pattern-recall h3{font-size:15px;margin:0 0 8px}.pattern-recall p{margin:0;font-weight:600}
 .sentence-pattern-card summary small{line-height:1.7;max-width:100%}
+.pattern-part-reading{margin-inline-start:10px;color:var(--muted);font-size:13px}
+.sentence-pattern-lesson .pattern-part-meaning{margin:2px 0 0}
+.pattern-forms{margin:12px 0;padding-inline-start:22px}
+.pattern-forms li{margin:8px 0;padding-inline-start:3px}
+.pattern-forms p,.sentence-pattern-lesson .pattern-forms p{margin:2px 0 0}
+.word-pattern-focus{margin:18px 0;padding:14px 16px;border:1px solid var(--line);border-radius:9px;background:#f4f8fa;font-size:15px;line-height:1.8;overflow-wrap:anywhere}
+.word-pattern-focus h3{margin:0 0 6px;font-size:14px}
+.word-pattern-focus .pattern-part-source{margin:0 0 4px}
+.word-pattern-focus .pattern-part-meaning{margin:0}
+.word-pattern-focus .pattern-forms{margin-bottom:0}
 @media(max-width:600px){.sentence-pattern-lesson h3{font-size:16px}.sentence-pattern-lesson{font-size:14px}.pattern-words,.pattern-structure{padding-left:18px}.pattern-example{padding-left:10px}.pattern-example p[lang=ja]{font-size:17px}}

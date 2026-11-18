@@ -3,8 +3,16 @@ import {buildSentencePatternExplanations} from './content/sentence-pattern-expla
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),read=f=>fs.readFileSync(path.join(root,'dist',f),'utf8'),c={window:{}};
 for(const f of ['book.js','grammar.js','study-morphology.js','study-expressions.js','study-groups.js'])vm.runInNewContext(read(f),c);
 const B=c.window.BOOK,S=c.window.STUDY_GROUPS,original=JSON.stringify(B),notes=buildSentencePatternExplanations(B);
-assert.equal(notes.length,14);assert.equal(S.sentencePatternLessons(B,B.lines[24]).length,7);
-for(const block of S.walkthrough(B,B.lines[24]).blocks)assert.equal(block.meaning,notes.find(n=>n.sentence===25&&n.quote===block.quote).meaning,'Chunk meaning must agree with the reviewed lesson');
+assert.equal(notes.length,24);
+for(const sentence of [25,29,30,31]){
+ const line=B.lines[sentence-1],blocks=S.walkthrough(B,line).blocks,lessons=S.sentencePatternLessons(B,line);
+ assert.equal(lessons.length,blocks.length,'Every chunk in the reviewed line needs a full explanation');
+ for(const block of blocks)assert.equal(block.meaning,lessons.find(n=>n.quote===block.quote).meaning,'Chunk meaning must agree with the reviewed lesson');
+}
+const expenseGroups=S.create(B,B.lines[30]);
+for(const [word,part] of [['なんだかんだ','なんだかんだで'],['は','30枚は'],['消えていった','消えていった'],['はずだ','はずだから']]){
+ assert.equal(expenseGroups.find(g=>g.s===word).sentencePart?.ja,part,'Each clicked token gets the corresponding part of the explanation');
+}
 for(const n of notes){assert.equal(n.jp.slice(n.start,n.end),n.quote);assert.equal(S.sentencePatternLesson(B,B.lines[n.sentence-1],n.quote).meaning,n.meaning);const g=S.create(B,B.lines[n.sentence-1]).filter(g=>g.sentenceLesson?.quote===n.quote);assert(g.length,'Lesson is reachable through words: '+n.quote);assert.equal(S.create(B,B.lines[n.sentence-1]).map(g=>g.s).join(''),n.jp);}
 for(const n of [434,2634])assert.equal(S.sentencePatternLessons(B,B.lines[n-1]).length,0,'たとえば must not match たとえ');
 assert.equal(S.sentencePatternLessons(B,B.lines[445])[0].pattern.title,'名词＋だし：补充情况');
@@ -35,7 +43,22 @@ for(const native of [false,true]){
  const originalAnalysis=S.analyses(B,B.lines[123],S.create(B,B.lines[123])),grammarText=d.querySelector('#learning-panel').textContent;
  assert(originalAnalysis.items.length>0);for(const item of originalAnalysis.items)assert(grammarText.includes(item.quote),'A partial rewrite must preserve other grammar: '+item.quote);
  jump(186);click('[aria-label="查看 たとえ"]');assert.match(visibleText(popup().querySelector('.sentence-pattern-lesson')),/着ていなくても.*着てなくても/s);close();
+ jump(31);click('[aria-label="查看 消えていった"]');
+ const focus=popup().querySelector('.word-pattern-focus');
+ assert(focus&&!focus.closest('details'),'The word popup opens directly to its own explanation');
+ assert.match(focus.textContent,/一笔笔开销.*花出去了/s);
+ assert.deepEqual([...focus.querySelectorAll('.pattern-forms li > b')].map(e=>e.textContent),['消える','消えて','消えていく','消えていった']);
+ assert.match(focus.textContent,/る换成て.*いく变成いった/s);
+ const blockLesson=popup().querySelector('.sentence-pattern-lesson');
+ assert(blockLesson.closest('details:not([open])'),'The rest of the chunk is optional when looking up one part');
+ close();click('[data-sentence-mode="chunks"]');click('[data-sentence-chunk="1"]');
+ lesson=popup().querySelector('.sentence-pattern-lesson');
+ assert(lesson&&!lesson.closest('details'));
+ assert.deepEqual([...lesson.querySelectorAll('.pattern-words > li > b')].map(e=>e.textContent),['なんだかんだで','万札が','30枚は','消えていった','はずだから']);
+ assert.match(visibleText(lesson),/少说也有三十张.*至少三十万日元.*る换成て.*いく变成いった.*把这整个估计接到后面/s);
+ assert.equal(lesson.querySelectorAll('.pattern-example').length,3);
+ close();click('[data-tab="words"]');
  click('[data-tab="quiz"]');assert.equal(d.querySelectorAll('#learning-panel .sentence-pattern-lesson').length,0);assert.deepEqual(JSON.parse(native?saved:w.localStorage.getItem('umi-progress-v1')).done,[0,18]);assert.deepEqual(errors,[]);dom.window.close();
 }
 assert.equal(JSON.stringify(B),original);
-console.log(JSON.stringify({sentencePatterns:'PASS',sourceReviewedLessons:notes.length,completeSentence25:true,kotoDashiOccurrences:6,tatoeOccurrences:3,fiveSectionsVisible:true,webAndNative:true,sourceAndProgressPreserved:true}));
+console.log(JSON.stringify({sentencePatterns:'PASS',sourceReviewedLessons:notes.length,completeSentences:[25,29,30,31],focusedVerbForms:true,kotoDashiOccurrences:6,tatoeOccurrences:3,fiveSectionsVisible:true,webAndNative:true,sourceAndProgressPreserved:true}));
