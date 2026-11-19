@@ -314,7 +314,7 @@
  }
  function blockSyntaxHTML(block){
   const syntax=block?.syntax;if(!syntax)return '';
-  return '<section class="sentence-structure" aria-label="句子结构"><h3>句子结构</h3><p class="syntax-summary">'+esc(syntax.summary)+'</p><dl>'+syntax.rows.map(row=>'<div class="syntax-row"><dt>'+esc(row.role)+'</dt><dd><b lang="ja">'+esc(row.ja)+'</b>'+(row.omitted?'<small class="syntax-omitted">原文此处省略</small>':'')+'<p>'+esc(row.zh)+'</p></dd></div>').join('')+'</dl></section>';
+  return '<section class="sentence-structure" aria-label="句子结构"><h3>句子结构</h3>'+(syntax.summary?'<p class="syntax-summary">'+esc(syntax.summary)+'</p>':'')+'<dl>'+syntax.rows.map(row=>'<div class="syntax-row"><dt><span>'+esc(row.omitted?'主语':row.role)+'</span><small class="syntax-hint">'+esc(row.hint||'')+'</small></dt><dd><b lang="ja">'+esc(row.ja)+'</b>'+(row.omitted?'<small class="syntax-omitted">主语承接前文，或由上下文补出</small>':'')+'<p>'+esc(row.zh)+'</p></dd></div>').join('')+'</dl>'+(syntax.context?'<p class="syntax-context"><b>人物与指代：</b>'+esc(syntax.context)+'</p>':'')+'</section>';
  }
  function plainBlockHTML(block){return blockSyntaxHTML(block)+plainBlockDetailsHTML(block);}
  function plainBlockDetailsHTML(block){

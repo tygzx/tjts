@@ -2,6 +2,7 @@ import {sentenceWalkthroughs} from '../content/sentence-walkthroughs.mjs';
 import {chunkGrammarDetails} from '../content/chunk-grammar-details.mjs';
 import {connectionLessons} from '../content/connection-lessons.mjs';
 import {sentenceStructures} from '../content/sentence-structures.mjs';
+import {buildSyntaxRoles} from './build-syntax-roles.mjs';
 export function buildWalkthroughs(book,lessons=sentenceWalkthroughs){
  const seen=new Set();
  return lessons.map(lesson=>{
@@ -13,13 +14,13 @@ export function buildWalkthroughs(book,lessons=sentenceWalkthroughs){
   }
   const jp=line.t.map(i=>book.words[i].s).join('');let offset=0;
   const punctuationOnly=s=>/^[\p{P}\p{Z}\s]*$/u.test(s);
-  const blocks=lesson.blocks.map(b=>{
+  const blocks=lesson.blocks.map((b,index)=>{
    const start=jp.indexOf(b.quote,offset),end=start+b.quote.length;
    if(start<0||!punctuationOnly(jp.slice(offset,start)))throw new Error('Uncovered or changed Japanese at '+lesson.sentence+' '+b.quote);
    if(!b.role||!b.meaning||!b.why)throw new Error('Incomplete teaching block '+lesson.sentence);
    const detail=chunkGrammarDetails.find(d=>d.sentence===lesson.sentence&&d.quote===b.quote);
-   const syntax=sentenceStructures.find(d=>d.sentence===lesson.sentence&&d.quote===b.quote);
-   if(syntax&&(!syntax.summary||!syntax.rows.length||syntax.rows.some(row=>!row.role||!row.ja||!row.zh||!row.omitted&&!b.quote.includes(row.ja))))throw new Error('Invalid sentence structure '+lesson.sentence+' '+b.quote);
+   const syntax=buildSyntaxRoles(lesson,b,index);
+   syntax.summary ||= sentenceStructures.find(d=>d.sentence===lesson.sentence&&d.quote===b.quote)?.summary||'';
    if(detail){
     if(!detail.structure||!detail.rebuild||!detail.parts.length)throw new Error('Incomplete detailed chunk '+lesson.sentence);
     for(const p of detail.parts){

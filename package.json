@@ -1,6 +1,6 @@
 {
   "name": "tjts-web",
-  "version": "1.0.27",
+  "version": "1.0.28",
   "private": true,
   "type": "module",
   "description": "听到涛声逐句学习网页版（不含音频和插图）",

@@ -299,6 +299,8 @@
 .sentence-structure{margin:22px 0 24px;font-size:14px;line-height:1.85}
 .sentence-structure h3{margin:0 0 10px;font-size:17px}
 .syntax-summary{margin:0 0 14px;font-weight:500}
+.syntax-hint{display:block;margin-top:4px;font-size:11px;line-height:1.6;font-weight:400;color:var(--muted)}
+.syntax-context{margin:12px 0 0;font-size:12px;line-height:1.9;color:var(--muted)}
 .sentence-structure dl{margin:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .syntax-row{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;padding:13px 14px;background:#fafcfd}
 .syntax-row+.syntax-row{border-top:1px solid var(--line)}

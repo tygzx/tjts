@@ -3,7 +3,9 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {JSDOM} from 'jsdom';
-import {sentenceStructures} from './content/sentence-structures.mjs';
+import {sentenceWalkthroughs} from './content/sentence-walkthroughs.mjs';
+import {syntaxRoleSpecs} from './content/syntax-roles.mjs';
+import {buildSyntaxRoles} from './lib/build-syntax-roles.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=file=>fs.readFileSync(path.join(root,'dist',file),'utf8');
@@ -50,16 +52,47 @@ for(const [lineIndex,line] of book.lines.entries()){
  }
 }
 assert(sameLine>0);assert(until.length>=2);assert.equal(until[0].n,1);assert.equal(until[1].n,2);
-for(const lesson of sentenceStructures){
- const block=study.readingChunks(book,book.lines[lesson.sentence-1])?.blocks.find(b=>b.quote===lesson.quote);
- assert(block?.syntax,'Structure not attached: '+lesson.sentence+' '+lesson.quote);
- assert.equal(JSON.stringify(block.syntax),JSON.stringify(lesson));
+assert.equal(syntaxRoleSpecs.size,sentenceWalkthroughs.length);
+let syntaxBlocks=0;
+for(const lesson of sentenceWalkthroughs){
+ const blocks=study.readingChunks(book,book.lines[lesson.sentence-1])?.blocks;
+ assert.equal(blocks?.length,lesson.blocks.length);
+ for(const [index,source] of lesson.blocks.entries()){
+  const syntax=blocks[index].syntax,expected=buildSyntaxRoles(lesson,source,index);
+  assert(syntax,'Structure not attached: '+lesson.sentence+' '+source.quote);
+  assert.equal(JSON.stringify(syntax.rows),JSON.stringify(expected.rows));
+  assert(syntax.context);syntaxBlocks++;
+ }
 }
+assert.equal(syntaxBlocks,626);
+const first=sentenceWalkthroughs[0];
+assert.throws(()=>buildSyntaxRoles({...first,blocks:[]},first.blocks[0],0),/Uncovered/);
+assert.throws(()=>buildSyntaxRoles(first,{quote:first.blocks[0].quote+'変更'},0),/Uncovered/);
 click('[data-sentence-chunk="0"]');
-assert.match(d.querySelector('.sentence-structure').textContent,/主语（省略）ぼく/);
-assert.match(d.querySelector('.sentence-structure').textContent,/时间范围入学するまでは/);
-assert.match(d.querySelector('.sentence-structure').textContent,/谓语ヒマだ/);
-assert(![...d.querySelectorAll('.syntax-row dt')].some(el=>el.textContent==='宾语'));
+const structureRows=()=>[...d.querySelectorAll('.sentence-structure .syntax-row')].map(row=>({role:row.querySelector('dt>span').textContent,ja:row.querySelector('dd>b').textContent,zh:row.querySelector('dd>p').textContent}));
+assert(structureRows().some(row=>row.role==='主语'&&row.ja==='ぼく'));
+assert(structureRows().some(row=>row.role==='时间状语'&&row.ja==='入学するまでは'));
+assert(structureRows().some(row=>row.role==='谓语'&&row.ja==='ヒマだ'));
+assert(!structureRows().some(row=>row.role==='宾语'));
+click('#word-dialog [data-close]');
+// The reported clause used to have no syntax panel at all. Carry the subject
+// from the preceding block, and distinguish a noun modifier from a time adverb.
+jump(68);click('[data-sentence-chunk="1"]');
+assert(structureRows().some(row=>row.role==='主语'&&row.ja==='電話の主'));
+assert(structureRows().some(row=>row.role==='定语'&&row.ja==='かつての'));
+assert(structureRows().some(row=>row.role==='定语'&&row.ja==='クラスメートの'));
+assert(structureRows().some(row=>row.role==='谓语'&&row.ja==='山尾忠志であった'));
+assert(!structureRows().some(row=>['宾语','时间状语'].includes(row.role)));
+assert.match(d.querySelector('.syntax-summary').textContent,/没有宾语/);
+assert.match(d.querySelector('.syntax-context').textContent,/電話の主|打电话|山尾/);
+assert(!d.querySelector('.sentence-structure').closest('details:not([open])'),'Constituents must be visible without opening another disclosure');
+click('#word-dialog [data-close]');
+jump(2);click('[data-sentence-chunk="0"]');
+assert(structureRows().some(row=>row.role==='时间状语'&&row.ja==='その年の三月に'));
+click('#word-dialog [data-close]');
+jump(32);click('[data-sentence-chunk="1"]');
+assert(structureRows().some(row=>row.role==='宾语'&&row.ja==='部屋を'));
+assert(structureRows().some(row=>row.role==='谓语'&&row.ja==='みまわして'));
 click('#word-dialog [data-close]');
 for(const occurrence of until.slice(0,2)){
  jump(occurrence.line);click('[data-zoom-word="'+occurrence.index+'"]');
@@ -107,4 +140,4 @@ assert.equal(stored.size,1);assert(entry().noteImages[0]!==savedImages[0].id,'Im
 click('[data-zoom-word][aria-label="放大词语：までは"]');await flush();
 assert.equal(d.querySelector('#word-dialog .vocab-note-gallery img').src,png,'Portable import restores the actual image bytes');
 assert.deepEqual(errors,[]);dom.window.close();
-console.log('PASS: all novel occurrence ordinals, same-line repeats, '+sentenceStructures.length+' reviewed structure blocks, word/chunk UI, image-only notes, native picker callback, failed-save rollback, screenshot viewing and portable import.');
+console.log('PASS: all novel occurrence ordinals, same-line repeats, '+syntaxBlocks+' reviewed structure blocks, word/chunk UI, image-only notes, native picker callback, failed-save rollback, screenshot viewing and portable import.');
